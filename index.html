@@ -5,202 +5,213 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Anvesh Jarabani — Senior Staff Data & AI Engineering Leader</title>
 <meta name="description" content="Senior Staff Data & AI Engineering Leader building scalable data platforms, agentic AI systems, and cloud-native analytics serving 20,000+ healthcare clinics.">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #0a192f;
-  --bg-light: #112240;
-  --bg-card: rgba(17,34,64,0.6);
-  --glass: rgba(17,34,64,0.4);
-  --glass-border: rgba(100,255,218,0.08);
-  --glass-hover: rgba(100,255,218,0.05);
-  --border: #1d3461;
-  --text: #ccd6f6;
-  --text-sec: #8892b0;
-  --text-dim: #495670;
-  --accent: #64ffda;
-  --accent-dim: rgba(100,255,218,0.1);
-  --accent-glow: rgba(100,255,218,0.15);
-  --white: #e6f1ff;
-  --sidebar-w: 420px;
-  --gap: 80px;
+  --bg: #0b1120;
+  --bg-card: #111827;
+  --bg-card-hover: #1a2332;
+  --glass: rgba(17,24,39,0.7);
+  --glass-border: rgba(148,163,184,0.08);
+  --border: #1e293b;
+  --text: #e2e8f0;
+  --text-sec: #94a3b8;
+  --text-dim: #475569;
+  --accent: #38bdf8;
+  --accent2: #a78bfa;
+  --accent3: #34d399;
+  --accent-dim: rgba(56,189,248,0.1);
+  --accent2-dim: rgba(167,139,250,0.1);
+  --accent3-dim: rgba(52,211,153,0.1);
+  --white: #f1f5f9;
+  --gradient: linear-gradient(135deg, #38bdf8, #a78bfa, #34d399);
+  --sidebar-w: 320px;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; scrollbar-color: #1d3461 var(--bg); }
+html { scroll-behavior: smooth; scrollbar-color: #1e293b var(--bg); }
 body {
   background: var(--bg);
   color: var(--text-sec);
   font: 16px/1.7 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
+
+/* ═══ BACKGROUND TEXTURE ═══ */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0;
+  background-image: radial-gradient(rgba(148,163,184,0.03) 1px, transparent 1px);
+  background-size: 24px 24px;
+  pointer-events: none;
+}
+
+/* Ambient gradient orbs */
+.orb {
+  position: fixed; border-radius: 50%; pointer-events: none;
+  filter: blur(120px); opacity: 0.12; z-index: 0;
+}
+.orb-1 { width: 600px; height: 600px; background: #38bdf8; top: -200px; right: -100px; }
+.orb-2 { width: 500px; height: 500px; background: #a78bfa; bottom: -150px; left: -100px; }
+.orb-3 { width: 400px; height: 400px; background: #34d399; top: 50%; left: 40%; }
 
 #spotlight {
   pointer-events: none; position: fixed; inset: 0; z-index: 0;
-  transition: background 0.15s;
+  transition: background 0.2s;
 }
 
 a { color: var(--accent); text-decoration: none; transition: color 0.2s; }
 a:hover { color: var(--white); }
-::selection { background: rgba(100,255,218,0.2); color: var(--white); }
+::selection { background: rgba(56,189,248,0.25); color: var(--white); }
 .hi { color: var(--white); font-weight: 600; }
 .accent { color: var(--accent); font-weight: 700; }
+.accent2 { color: var(--accent2); font-weight: 700; }
+.accent3 { color: var(--accent3); font-weight: 700; }
 
-/* ═══ SPLIT PANEL LAYOUT ═══ */
+/* ═══ LAYOUT ═══ */
 .layout {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 0 48px;
   display: flex;
-  gap: var(--gap);
+  gap: 48px;
   position: relative;
   z-index: 1;
 }
 
 .sidebar {
-  position: sticky;
-  top: 0;
-  width: var(--sidebar-w);
+  position: sticky; top: 0;
+  width: var(--sidebar-w); flex-shrink: 0;
   height: 100vh;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 96px 0;
+  display: flex; flex-direction: column; justify-content: space-between;
+  padding: 80px 0;
 }
 
 .main {
-  flex: 1;
-  min-width: 0;
-  padding: 96px 0 96px;
+  flex: 1; min-width: 0;
+  padding: 80px 0;
 }
 
 /* ═══ SIDEBAR ═══ */
-.sidebar-top {}
-
 .avatar {
-  width: 80px; height: 80px; border-radius: 50%;
-  border: 2px solid var(--border);
-  overflow: hidden; margin-bottom: 20px;
+  width: 72px; height: 72px; border-radius: 50%;
+  border: 2px solid var(--border); overflow: hidden;
+  margin-bottom: 20px;
+  box-shadow: 0 0 24px rgba(56,189,248,0.1);
 }
 .avatar img { width: 100%; height: 100%; object-fit: cover; }
 
 .sidebar h1 {
-  font-size: 42px; font-weight: 900; color: var(--white);
-  line-height: 1.05; letter-spacing: -2px;
+  font-size: 38px; font-weight: 900; line-height: 1.05; letter-spacing: -1.5px;
+  background: var(--gradient);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 .sidebar .subtitle {
-  font-size: 17px; font-weight: 600; color: var(--accent);
-  margin-top: 8px; letter-spacing: 0.2px;
+  font-size: 15px; font-weight: 600; color: var(--accent);
+  margin-top: 8px; letter-spacing: 0.3px;
 }
 .sidebar .tagline {
-  font-size: 15px; color: var(--text-sec); margin-top: 14px;
-  line-height: 1.65; max-width: 340px;
+  font-size: 14px; color: var(--text-sec); margin-top: 14px;
+  line-height: 1.7; max-width: 300px;
 }
 
-/* Nav links with animated dash */
-.sidebar-nav { margin-top: 48px; display: flex; flex-direction: column; gap: 6px; }
+.sidebar-nav {
+  margin-top: 40px;
+  display: flex; flex-direction: column; gap: 4px;
+}
 .sidebar-nav a {
-  display: flex; align-items: center; gap: 12px;
-  color: var(--text-dim); font-size: 12px; font-weight: 700;
-  text-transform: uppercase; letter-spacing: 2px;
-  padding: 8px 0; transition: all 0.25s;
+  display: flex; align-items: center; gap: 14px;
+  color: var(--text-dim); font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 2.5px;
+  padding: 8px 0; transition: all 0.3s;
 }
 .sidebar-nav a .dash {
-  display: inline-block; width: 32px; height: 1px;
-  background: var(--text-dim); transition: all 0.25s;
+  display: inline-block; width: 28px; height: 1.5px;
+  background: var(--text-dim); transition: all 0.3s;
+  border-radius: 1px;
 }
-.sidebar-nav a:hover,
-.sidebar-nav a.active {
-  color: var(--white);
-}
-.sidebar-nav a:hover .dash,
-.sidebar-nav a.active .dash {
-  width: 64px; background: var(--white);
+.sidebar-nav a:hover, .sidebar-nav a.active { color: var(--white); }
+.sidebar-nav a:hover .dash, .sidebar-nav a.active .dash {
+  width: 56px; background: var(--accent);
 }
 
-/* Social links */
-.socials {
-  display: flex; gap: 20px; padding-top: 24px;
-}
-.socials a {
-  color: var(--text-dim); transition: color 0.2s;
-}
-.socials a:hover { color: var(--accent); }
-.socials svg { width: 22px; height: 22px; fill: currentColor; }
+.socials { display: flex; gap: 16px; padding-top: 16px; }
+.socials a { color: var(--text-dim); transition: all 0.3s; }
+.socials a:hover { color: var(--accent); transform: translateY(-2px); }
+.socials svg { width: 20px; height: 20px; fill: currentColor; }
 
-/* ═══ MAIN CONTENT SECTIONS ═══ */
-section { margin-bottom: 80px; }
+/* ═══ SECTIONS ═══ */
+section { margin-bottom: 72px; }
 section:last-of-type { margin-bottom: 0; }
-
 .section-label {
-  font-size: 12px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 2.5px; color: var(--accent); margin-bottom: 32px;
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 3px; color: var(--accent); margin-bottom: 28px;
   display: none;
 }
 
 /* ═══ ABOUT ═══ */
 .about p {
-  font-size: 15px; line-height: 1.8; margin-bottom: 16px; color: var(--text-sec);
+  font-size: 16px; line-height: 1.85; margin-bottom: 16px;
+  color: var(--text-sec);
 }
-.about p:last-child { margin-bottom: 0; }
 
-/* ═══ STATS ROW ═══ */
+/* ═══ STATS ═══ */
 .stats-row {
   display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
-  margin-top: 32px;
+  margin-top: 28px;
 }
 .stat-card {
-  background: var(--glass);
-  backdrop-filter: blur(12px);
+  background: var(--bg-card);
   border: 1px solid var(--glass-border);
-  border-radius: 12px;
-  padding: 20px 16px;
-  text-align: center;
-  transition: all 0.3s;
+  border-radius: 16px; padding: 20px 12px;
+  text-align: center; transition: all 0.4s cubic-bezier(.4,0,.2,1);
+  position: relative; overflow: hidden;
 }
-.stat-card:hover {
-  border-color: rgba(100,255,218,0.2);
-  background: var(--glass-hover);
-  transform: translateY(-2px);
+.stat-card::before {
+  content: ''; position: absolute; inset: 0;
+  background: var(--gradient); opacity: 0;
+  transition: opacity 0.4s; border-radius: 16px;
 }
+.stat-card:hover { transform: translateY(-4px); border-color: transparent; }
+.stat-card:hover::before { opacity: 0.06; }
 .stat-num {
-  font-size: 28px; font-weight: 900; color: var(--accent);
-  line-height: 1.1; letter-spacing: -1px;
+  font-size: 30px; font-weight: 900; line-height: 1.1;
+  letter-spacing: -1px; position: relative;
+  background: var(--gradient);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 .stat-label {
   font-size: 10px; color: var(--text-dim); text-transform: uppercase;
   letter-spacing: 1.5px; margin-top: 6px; font-weight: 600;
+  position: relative;
 }
 
-/* ═══ EXPERIENCE CARDS ═══ */
+/* ═══ EXPERIENCE ═══ */
 .exp-card {
-  padding: 24px;
-  border-radius: 12px;
-  border: 1px solid transparent;
-  margin-bottom: 12px;
-  transition: all 0.3s;
+  padding: 24px 28px; border-radius: 16px;
+  border: 1px solid transparent; margin-bottom: 8px;
+  transition: all 0.4s cubic-bezier(.4,0,.2,1);
   cursor: default;
 }
 .exp-card:hover {
-  background: var(--glass);
-  backdrop-filter: blur(12px);
+  background: var(--bg-card);
   border-color: var(--glass-border);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  box-shadow: 0 8px 40px rgba(0,0,0,0.25), inset 0 1px 0 rgba(148,163,184,0.05);
+  transform: translateX(4px);
 }
-.exp-card:last-child { margin-bottom: 0; }
 
-.exp-meta {
-  display: flex; align-items: flex-start; gap: 16px;
-}
+.exp-meta { display: flex; align-items: flex-start; gap: 16px; }
 .exp-logo {
-  width: 44px; height: 44px; border-radius: 10px;
-  background: var(--bg-light); border: 1px solid var(--border);
+  width: 44px; height: 44px; border-radius: 12px;
+  background: var(--bg-card); border: 1px solid var(--border);
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0; overflow: hidden;
   font-size: 12px; font-weight: 800; color: var(--accent);
 }
-.exp-logo img { width: 30px; height: 30px; object-fit: contain; }
+.exp-logo img { width: 28px; height: 28px; object-fit: contain; }
 
 .exp-info { flex: 1; min-width: 0; }
 .exp-title-row {
@@ -208,200 +219,269 @@ section:last-of-type { margin-bottom: 0; }
   gap: 12px; flex-wrap: wrap;
 }
 .exp-role {
-  font-size: 16px; font-weight: 700; color: var(--white);
-  transition: color 0.2s;
+  font-size: 17px; font-weight: 700; color: var(--white);
+  transition: color 0.3s;
 }
 .exp-card:hover .exp-role { color: var(--accent); }
 .exp-date {
-  font-size: 12px; font-weight: 500; color: var(--text-dim);
+  font-size: 12px; font-weight: 600; color: var(--text-dim);
   letter-spacing: 0.5px; white-space: nowrap;
+  font-family: 'JetBrains Mono', monospace;
 }
-.exp-company {
-  font-size: 13px; color: var(--text-sec); margin-top: 2px;
-}
+.exp-company { font-size: 13px; color: var(--text-sec); margin-top: 2px; }
 
-/* Expand/collapse */
 .exp-summary {
-  margin-top: 12px; font-size: 14px; color: var(--text-sec); line-height: 1.7;
+  margin-top: 12px; font-size: 14.5px; color: var(--text-sec); line-height: 1.75;
 }
 .exp-details {
   max-height: 0; overflow: hidden;
-  transition: max-height 0.4s ease, opacity 0.3s ease;
+  transition: max-height 0.5s cubic-bezier(.4,0,.2,1), opacity 0.4s;
   opacity: 0;
 }
-.exp-card.expanded .exp-details {
-  max-height: 2000px; opacity: 1;
-}
-.exp-bullets {
-  margin-top: 12px; padding: 0;
-}
+.exp-card.expanded .exp-details { max-height: 3000px; opacity: 1; }
+
+.exp-bullets { margin-top: 14px; padding: 0; }
 .exp-bullets li {
-  list-style: none; position: relative; padding-left: 18px;
-  font-size: 14px; color: var(--text-sec); line-height: 1.65;
-  margin-bottom: 6px;
+  list-style: none; position: relative; padding-left: 20px;
+  font-size: 14px; color: var(--text-sec); line-height: 1.7;
+  margin-bottom: 8px;
 }
 .exp-bullets li::before {
-  content: '\25B9'; position: absolute; left: 0; color: var(--accent);
-  font-size: 11px; top: 2px;
+  content: ''; position: absolute; left: 0; top: 10px;
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent); opacity: 0.6;
 }
 
 .exp-toggle {
   display: inline-flex; align-items: center; gap: 6px;
-  margin-top: 12px; padding: 4px 0;
+  margin-top: 14px; padding: 6px 14px;
   font-size: 12px; font-weight: 600; color: var(--accent);
-  cursor: pointer; border: none; background: none;
-  transition: color 0.2s; letter-spacing: 0.3px;
+  cursor: pointer; border: 1px solid rgba(56,189,248,0.2);
+  background: var(--accent-dim);
+  border-radius: 99px; transition: all 0.3s;
+  letter-spacing: 0.3px;
 }
-.exp-toggle:hover { color: var(--white); }
+.exp-toggle:hover {
+  background: rgba(56,189,248,0.15);
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
 .exp-toggle .arrow {
   display: inline-block; transition: transform 0.3s;
   font-size: 10px;
 }
 .exp-card.expanded .exp-toggle .arrow { transform: rotate(90deg); }
 
-.exp-tags {
-  display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px;
-}
+.exp-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; }
 .tag {
   padding: 4px 12px; border-radius: 99px; font-size: 11px; font-weight: 600;
-  color: var(--accent); background: var(--accent-dim); line-height: 1.6;
-  white-space: nowrap;
+  line-height: 1.6; white-space: nowrap;
 }
+.tag-blue { color: var(--accent); background: var(--accent-dim); }
+.tag-purple { color: var(--accent2); background: var(--accent2-dim); }
+.tag-green { color: var(--accent3); background: var(--accent3-dim); }
 
-/* ═══ SKILLS BENTO GRID ═══ */
+/* ═══ BENTO SKILLS ═══ */
 .bento-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  grid-auto-rows: auto;
   gap: 12px;
 }
 .bento-card {
-  background: var(--glass);
-  backdrop-filter: blur(12px);
+  background: var(--bg-card);
   border: 1px solid var(--glass-border);
-  border-radius: 12px;
-  padding: 24px;
-  transition: all 0.3s;
+  border-radius: 16px; padding: 24px;
+  transition: all 0.4s cubic-bezier(.4,0,.2,1);
+  position: relative; overflow: hidden;
+}
+.bento-card::after {
+  content: ''; position: absolute; top: 0; left: 0; right: 0;
+  height: 2px; border-radius: 16px 16px 0 0;
+  opacity: 0; transition: opacity 0.4s;
 }
 .bento-card:hover {
-  border-color: rgba(100,255,218,0.2);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+  transform: translateY(-4px);
+  border-color: rgba(148,163,184,0.12);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.3);
 }
+.bento-card:hover::after { opacity: 1; }
 .bento-card.span-2 { grid-column: span 2; }
-.bento-card.span-row { grid-row: span 2; }
+
+/* Color-coded card tops */
+.bento-card[data-color="blue"]::after { background: var(--accent); }
+.bento-card[data-color="purple"]::after { background: var(--accent2); }
+.bento-card[data-color="green"]::after { background: var(--accent3); }
+.bento-card[data-color="multi"]::after { background: var(--gradient); }
 
 .bento-title {
-  font-size: 11px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 1.5px; color: var(--accent); margin-bottom: 14px;
+  font-size: 12px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 1.5px; margin-bottom: 14px;
 }
+.bento-card[data-color="blue"] .bento-title { color: var(--accent); }
+.bento-card[data-color="purple"] .bento-title { color: var(--accent2); }
+.bento-card[data-color="green"] .bento-title { color: var(--accent3); }
+.bento-card[data-color="multi"] .bento-title {
+  background: var(--gradient);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
 .pills { display: flex; flex-wrap: wrap; gap: 6px; }
 .pill {
   display: inline-flex; align-items: center; gap: 6px;
-  padding: 5px 12px; border-radius: 99px; font-size: 12px; font-weight: 500;
-  color: var(--text); background: rgba(10,25,47,0.8);
-  border: 1px solid var(--border); transition: all 0.2s; cursor: default;
+  padding: 6px 14px; border-radius: 10px; font-size: 12.5px; font-weight: 500;
+  color: var(--text); background: rgba(11,17,32,0.8);
+  border: 1px solid var(--border); transition: all 0.3s; cursor: default;
 }
 .pill:hover {
-  color: var(--accent); border-color: var(--accent);
+  border-color: var(--accent); color: var(--white);
   background: var(--accent-dim);
+  transform: translateY(-1px);
 }
 .pill img {
   width: 14px; height: 14px; object-fit: contain;
-  filter: grayscale(100%) brightness(1.5); transition: filter 0.2s;
+  filter: grayscale(100%) brightness(1.8); transition: filter 0.3s;
 }
 .pill:hover img { filter: none; }
 
 /* ═══ EDUCATION ═══ */
 .edu-card {
   display: flex; justify-content: space-between; align-items: center;
-  padding: 18px 24px; border-radius: 12px; margin-bottom: 8px;
-  border: 1px solid transparent; transition: all 0.3s;
+  padding: 18px 24px; border-radius: 16px; margin-bottom: 8px;
+  border: 1px solid transparent; transition: all 0.4s cubic-bezier(.4,0,.2,1);
   flex-wrap: wrap; gap: 8px;
 }
 .edu-card:hover {
-  background: var(--glass); border-color: var(--glass-border);
-  backdrop-filter: blur(12px);
+  background: var(--bg-card);
+  border-color: var(--glass-border);
+  transform: translateX(4px);
 }
 .edu-left { display: flex; align-items: center; gap: 14px; }
 .edu-icon {
-  width: 40px; height: 40px; border-radius: 10px;
+  width: 42px; height: 42px; border-radius: 12px;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0; font-size: 12px; font-weight: 900;
 }
 .edu-degree { font-size: 15px; font-weight: 700; color: var(--white); }
 .edu-school { font-size: 13px; color: var(--text-sec); }
-.edu-year { font-size: 13px; color: var(--text-dim); white-space: nowrap; }
+.edu-year {
+  font-size: 13px; color: var(--text-dim); white-space: nowrap;
+  font-family: 'JetBrains Mono', monospace; font-weight: 500;
+}
 
 .certs-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
 .cert-badge {
   display: inline-flex; align-items: center; gap: 8px;
-  padding: 7px 14px; border-radius: 99px; font-size: 12px; font-weight: 500;
-  color: var(--text); background: var(--glass);
-  border: 1px solid var(--glass-border); transition: all 0.2s; cursor: default;
+  padding: 7px 16px; border-radius: 10px; font-size: 12px; font-weight: 500;
+  color: var(--text); background: var(--bg-card);
+  border: 1px solid var(--glass-border); transition: all 0.3s; cursor: default;
 }
 .cert-badge img { width: 14px; height: 14px; object-fit: contain; }
 .cert-badge:hover {
-  color: var(--accent); border-color: rgba(100,255,218,0.2);
+  color: var(--accent); border-color: rgba(56,189,248,0.2);
+  transform: translateY(-2px);
 }
 
-/* ═══ WRITING CARDS ═══ */
+/* ═══ WRITING ═══ */
+.writing-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+}
 .writing-card {
   display: block; text-decoration: none; color: inherit;
-  padding: 24px; border-radius: 12px; margin-bottom: 8px;
-  border: 1px solid transparent; transition: all 0.3s;
+  padding: 24px; border-radius: 16px;
+  border: 1px solid var(--glass-border);
+  background: var(--bg-card);
+  transition: all 0.4s cubic-bezier(.4,0,.2,1);
+  position: relative; overflow: hidden;
+}
+.writing-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0;
+  height: 2px; background: var(--gradient);
+  opacity: 0; transition: opacity 0.4s;
 }
 .writing-card:hover {
-  background: var(--glass); border-color: var(--glass-border);
-  backdrop-filter: blur(12px);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+  border-color: rgba(148,163,184,0.12);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.3);
   color: inherit;
 }
+.writing-card:hover::before { opacity: 1; }
+
 .writing-title {
-  font-size: 16px; font-weight: 700; color: var(--white);
-  transition: color 0.2s; display: inline-flex; align-items: center; gap: 8px;
+  font-size: 15px; font-weight: 700; color: var(--white);
+  transition: color 0.3s; display: flex; align-items: center;
+  justify-content: space-between; gap: 8px;
 }
 .writing-card:hover .writing-title { color: var(--accent); }
 .writing-title .arrow-link {
-  display: inline-block; font-size: 13px; color: var(--text-dim);
-  transition: all 0.2s; transform: translate(0, 0);
+  font-size: 14px; color: var(--text-dim);
+  transition: all 0.3s; flex-shrink: 0;
 }
 .writing-card:hover .arrow-link {
   color: var(--accent); transform: translate(3px, -3px);
 }
 .writing-meta {
-  font-size: 12px; color: var(--text-dim); margin-top: 4px;
-  font-weight: 500; letter-spacing: 0.3px;
+  font-size: 11px; color: var(--text-dim); margin-top: 6px;
+  font-weight: 600; letter-spacing: 0.5px;
+  font-family: 'JetBrains Mono', monospace;
 }
 .writing-desc {
-  font-size: 14px; color: var(--text-sec); margin-top: 8px; line-height: 1.65;
+  font-size: 13.5px; color: var(--text-sec); margin-top: 10px; line-height: 1.65;
 }
+.writing-card .exp-tags { margin-top: 14px; }
 
 /* ═══ FOOTER ═══ */
 footer {
-  padding: 48px 0 32px; font-size: 12px; color: var(--text-dim);
-  line-height: 1.8;
+  padding: 48px 0 32px; font-size: 12px; color: var(--text-dim); line-height: 1.8;
 }
 footer a { color: var(--text-sec); font-weight: 500; }
 footer a:hover { color: var(--accent); }
 
-/* ═══ SCROLL ANIMATIONS ═══ */
+/* ═══ ANIMATIONS ═══ */
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(28px) scale(0.98); filter: blur(4px); }
+  to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+@keyframes fadeSlideLeft {
+  from { opacity: 0; transform: translateX(-20px); filter: blur(3px); }
+  to { opacity: 1; transform: translateX(0); filter: blur(0); }
+}
+@keyframes glowPulse {
+  0%, 100% { opacity: 0.1; }
+  50% { opacity: 0.18; }
+}
+
+.orb { animation: glowPulse 8s ease-in-out infinite; }
+.orb-2 { animation-delay: 2.5s; }
+.orb-3 { animation-delay: 5s; }
+
 .reveal {
   opacity: 0;
-  transform: translateY(20px);
-  transition: opacity 0.6s ease, transform 0.6s ease;
+  transform: translateY(28px) scale(0.98);
+  filter: blur(4px);
 }
 .reveal.visible {
-  opacity: 1;
-  transform: translateY(0);
+  animation: fadeSlideUp 0.7s cubic-bezier(.16,1,.3,1) forwards;
+  animation-delay: calc(var(--d, 0) * 1ms);
 }
-.reveal-stagger { transition-delay: calc(var(--i, 0) * 80ms); }
+
+.sidebar-top > * {
+  opacity: 0; transform: translateX(-20px); filter: blur(3px);
+}
+.sidebar-loaded .sidebar-top > * {
+  animation: fadeSlideLeft 0.6s cubic-bezier(.16,1,.3,1) forwards;
+}
+.sidebar-loaded .sidebar-top > *:nth-child(1) { animation-delay: 100ms; }
+.sidebar-loaded .sidebar-top > *:nth-child(2) { animation-delay: 200ms; }
+.sidebar-loaded .sidebar-top > *:nth-child(3) { animation-delay: 300ms; }
+.sidebar-loaded .sidebar-top > *:nth-child(4) { animation-delay: 400ms; }
+.sidebar-loaded .sidebar-top > *:nth-child(5) { animation-delay: 500ms; }
 
 /* ═══ RESPONSIVE ═══ */
-@media (max-width: 1024px) {
+@media (max-width: 1100px) {
   .layout { flex-direction: column; padding: 0 24px; gap: 0; }
   .sidebar {
-    position: relative; height: auto; padding: 48px 0 32px;
+    position: relative; height: auto; padding: 48px 0 24px;
     width: 100%;
   }
   .sidebar-nav { display: none; }
@@ -409,24 +489,28 @@ footer a:hover { color: var(--accent); }
   .section-label { display: block; }
   .bento-grid { grid-template-columns: 1fr 1fr; }
   .bento-card.span-2 { grid-column: span 1; }
+  .writing-grid { grid-template-columns: 1fr; }
 }
-@media (max-width: 600px) {
-  .sidebar h1 { font-size: 32px; }
+@media (max-width: 640px) {
+  .sidebar h1 { font-size: 30px; }
   .stats-row { grid-template-columns: repeat(2, 1fr); }
   .bento-grid { grid-template-columns: 1fr; }
-  .bento-card.span-2 { grid-column: span 1; }
   .layout { padding: 0 16px; }
 }
 </style>
 </head>
 <body>
 
+<!-- Ambient orbs -->
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
 <div id="spotlight"></div>
 
 <div class="layout">
 
-<!-- ═══════════ LEFT SIDEBAR (sticky) ═══════════ -->
-<aside class="sidebar">
+<!-- ═══ SIDEBAR ═══ -->
+<aside class="sidebar" id="sidebar">
   <div class="sidebar-top">
     <div class="avatar"><img src="photo.jpg" alt="Anvesh Jarabani"></div>
     <h1>Anvesh<br>Jarabani</h1>
@@ -455,23 +539,23 @@ footer a:hover { color: var(--accent); }
   </div>
 </aside>
 
-<!-- ═══════════ RIGHT SCROLLING CONTENT ═══════════ -->
+<!-- ═══ MAIN ═══ -->
 <main class="main">
 
 <!-- ABOUT -->
 <section id="about">
   <div class="section-label">About</div>
   <div class="about">
-    <p class="reveal">Currently at <a href="https://wellsky.com" target="_blank">WellSky</a>, I lead the analytics engineering team building production <span class="hi">agentic RAG platforms</span> on Google ADK and Vertex AI, an AI-powered knowledge system indexing <span class="hi">658 GitHub repos</span> and <span class="hi">31K Confluence pages</span>, and a greenfield <span class="hi">Meridian Analytics Stack</span> delivering <span class="accent">30 clinical dashboards</span> for hospice operations.</p>
-    <p class="reveal">Before healthcare, I spent 7 years at <span class="hi">Ultra Clean Technology</span> building AWS data platforms for <span class="hi">$120M manufacturing operations</span> — ML-powered quoting at <span class="accent">99% accuracy</span>, NLP for bill-of-materials <span class="accent">18x faster</span>, and anomaly detection saving <span class="accent">$800K/yr</span>.</p>
-    <p class="reveal">When I'm not engineering data systems, I'm tinkering with developer tooling, home automation, and finding ways to make repetitive work disappear.</p>
+    <p class="reveal" style="--d:0">Currently at <a href="https://wellsky.com" target="_blank">WellSky</a>, I lead the analytics engineering team building production <span class="hi">agentic RAG platforms</span> on Google ADK and Vertex AI, an AI-powered knowledge system indexing <span class="hi">658 GitHub repos</span> and <span class="hi">31K Confluence pages</span>, and a greenfield <span class="hi">Meridian Analytics Stack</span> delivering <span class="accent2">30 clinical dashboards</span> for hospice operations.</p>
+    <p class="reveal" style="--d:80">Before healthcare, I spent 7 years at <span class="hi">Ultra Clean Technology</span> building AWS data platforms for <span class="hi">$120M manufacturing operations</span> — ML-powered quoting at <span class="accent3">99% accuracy</span>, NLP for bill-of-materials <span class="accent3">18x faster</span>, and anomaly detection saving <span class="accent3">$800K/yr</span>.</p>
+    <p class="reveal" style="--d:160">When I'm not engineering data systems, I'm tinkering with developer tooling, home automation, and finding ways to make repetitive work disappear.</p>
   </div>
 
-  <div class="stats-row reveal">
-    <div class="stat-card" style="--i:0"><div class="stat-num">11+</div><div class="stat-label">Years</div></div>
-    <div class="stat-card" style="--i:1"><div class="stat-num">$10M+</div><div class="stat-label">Value</div></div>
-    <div class="stat-card" style="--i:2"><div class="stat-num">658+</div><div class="stat-label">Repos</div></div>
-    <div class="stat-card" style="--i:3"><div class="stat-num">20K+</div><div class="stat-label">Clinics</div></div>
+  <div class="stats-row">
+    <div class="stat-card reveal" style="--d:200"><div class="stat-num">11+</div><div class="stat-label">Years</div></div>
+    <div class="stat-card reveal" style="--d:260"><div class="stat-num">$10M+</div><div class="stat-label">Value</div></div>
+    <div class="stat-card reveal" style="--d:320"><div class="stat-num">658</div><div class="stat-label">Repos</div></div>
+    <div class="stat-card reveal" style="--d:380"><div class="stat-num">20K+</div><div class="stat-label">Clinics</div></div>
   </div>
 </section>
 
@@ -480,7 +564,7 @@ footer a:hover { color: var(--accent); }
   <div class="section-label">Experience</div>
 
   <!-- WellSky — Senior Staff -->
-  <div class="exp-card reveal" data-expandable>
+  <div class="exp-card reveal" style="--d:0" data-expandable>
     <div class="exp-meta">
       <div class="exp-logo"><img src="https://wellsky.com/favicon.ico" alt="WellSky"></div>
       <div class="exp-info">
@@ -492,50 +576,48 @@ footer a:hover { color: var(--accent); }
       </div>
     </div>
     <div class="exp-summary">
-      Build greenfield <span class="hi">Meridian Analytics Stack</span> end-to-end (Terraform → Datastream CDC → BigQuery → dbt → Cube.js → Superset), delivering <span class="accent">30 clinical/financial charts</span>. Architect production <span class="hi">agentic RAG platform</span> and <span class="hi">HOPE agent</span> for hospice care. Create <span class="accent">67 developer skills</span> driving org-wide AI adoption across <span class="accent">21 engineering teams</span>.
+      Build greenfield <span class="hi">Meridian Analytics Stack</span> end-to-end (Terraform → Datastream CDC → BigQuery → dbt → Cube.js → Superset), delivering <span class="accent">30 clinical/financial charts</span>. Architect production <span class="hi">agentic RAG platform</span> and <span class="hi">HOPE agent</span> for hospice care. Create <span class="accent2">67 developer skills</span> driving org-wide AI adoption across <span class="accent2">21 engineering teams</span>.
     </div>
 
     <div class="exp-details">
       <ul class="exp-bullets">
-        <li>Deliver <span class="hi">BI Analytics Platform</span> on <span class="hi">GKE Autopilot</span> (Superset, CubeJS, CubeStore, Composer, Redis) serving <span class="accent">20,000+</span> clinics with self-service analytics, replacing legacy reporting</li>
-        <li>Create <span class="hi">AI-powered knowledge platform</span> indexing <span class="accent">658</span> GitHub repos and <span class="accent">31K</span> Confluence pages, building <span class="accent">67</span> developer skills accelerating AI-assisted development</li>
-        <li>Architect production <span class="hi">agentic RAG platform</span> using <span class="hi">Google ADK</span> and <span class="hi">Vertex AI (Gemini 2.0 Flash)</span> with GraphRAG, multi-stage query decomposition, and adaptive retrieval</li>
-        <li>Build <span class="hi">HOPE</span> (Healthcare Outcome Prediction Engine) agent with MCP integration for hospice &amp; palliative care, automating patient data retrieval and clinical summarization</li>
+        <li>Deliver <span class="hi">BI Analytics Platform</span> on GKE Autopilot (Superset, CubeJS, CubeStore, Composer, Redis) serving <span class="accent">20,000+</span> clinics with self-service analytics</li>
+        <li>Create <span class="hi">AI-powered knowledge platform</span> indexing <span class="accent">658</span> GitHub repos and <span class="accent">31K</span> Confluence pages, building <span class="accent2">67</span> developer skills accelerating AI-assisted development</li>
+        <li>Architect production <span class="hi">agentic RAG platform</span> using Google ADK and Vertex AI (Gemini 2.0 Flash) with GraphRAG, multi-stage query decomposition, and adaptive retrieval</li>
+        <li>Build <span class="hi">HOPE</span> (Healthcare Outcome Prediction Engine) agent with MCP integration for hospice &amp; palliative care</li>
         <li>Architect next-generation <span class="hi">AI-enabled EMR platform</span> with AI-powered chat service using .NET 10, Kafka (Redpanda), and Vertex AI</li>
-        <li>Lead enterprise <span class="hi">AI tool adoption</span> enabling <span class="accent">50+</span> engineers with LLM-powered development pipelines. Design multi-agent orchestration using LangGraph with responsible AI guardrails</li>
+        <li>Lead enterprise <span class="hi">AI tool adoption</span> enabling <span class="accent">50+</span> engineers with LLM-powered development pipelines and multi-agent orchestration</li>
         <li>Architect <span class="hi">Dataform</span> warehouse with medallion architecture governance and DQ quarantine framework across <span class="accent">1,100+</span> analytics models</li>
-        <li>Execute <span class="hi">PSH Domain Build</span> (7-phase Kimball dimensional model): end-to-end from HVR replication through DQ validation</li>
-        <li>Wire <span class="hi">analytics agent orchestration</span> integrating Cube.js semantic layer, NLP-to-SQL, and Vertex AI — enabling natural-language KPI queries with inline chart rendering</li>
+        <li>Execute <span class="hi">PSH Domain Build</span> (7-phase Kimball dimensional model) from HVR replication through DQ validation</li>
+        <li>Wire <span class="hi">analytics agent orchestration</span> integrating Cube.js semantic layer, NLP-to-SQL, and Vertex AI for natural-language KPI queries</li>
         <li>Design <span class="hi">RLS architecture</span> using Cube.js semantic layer with Okta identity integration for secure multi-tenant embedded analytics</li>
-        <li>Drive <span class="hi">HVR → HVR6 Migration</span> across multi-source topology with PostgreSQL hub optimization and Snowflake target integration</li>
-        <li>Build <span class="hi">Snowpipe</span> pipeline replicating <span class="accent">1,037</span> tables → GCS → Snowflake. Implement Tableau Okta CIAM SAML SSO</li>
-        <li>Deploy <span class="hi">AI-driven schema drift detection</span> using Vertex AI auto-generating remediation PRs with self-healing pipelines</li>
-        <li>Establish <span class="hi">WSH BI Architecture Council</span> leading technology decisions adopted across the analytics engineering org</li>
-        <li>Architect <span class="hi">Kimball dimensional model</span> with bus matrix and domain ERDs for Meridian, establishing the analytical foundation for <span class="accent">300+</span> charts</li>
+        <li>Drive <span class="hi">HVR → HVR6 Migration</span> across multi-source topology with PostgreSQL hub optimization</li>
+        <li>Build <span class="hi">Snowpipe</span> pipeline replicating <span class="accent">1,037</span> tables → GCS → Snowflake</li>
+        <li>Deploy <span class="hi">AI-driven schema drift detection</span> using Vertex AI auto-generating remediation PRs</li>
+        <li>Establish <span class="hi">WSH BI Architecture Council</span> setting standards adopted across the analytics engineering org</li>
+        <li>Architect <span class="hi">Kimball dimensional model</span> with bus matrix for Meridian, establishing foundation for <span class="accent">300+</span> charts</li>
       </ul>
     </div>
 
-    <button class="exp-toggle" aria-label="Show more details">
-      <span class="arrow">▸</span> Show all 15 highlights
-    </button>
+    <button class="exp-toggle"><span class="arrow">▸</span> Show all 15 highlights</button>
 
     <div class="exp-tags">
-      <span class="tag">GCP</span>
-      <span class="tag">Vertex AI</span>
-      <span class="tag">BigQuery</span>
-      <span class="tag">Google ADK</span>
-      <span class="tag">dbt</span>
-      <span class="tag">Cube.js</span>
-      <span class="tag">Superset</span>
-      <span class="tag">Terraform</span>
-      <span class="tag">Kubernetes</span>
-      <span class="tag">Kafka</span>
-      <span class="tag">.NET</span>
+      <span class="tag tag-blue">GCP</span>
+      <span class="tag tag-blue">Vertex AI</span>
+      <span class="tag tag-blue">BigQuery</span>
+      <span class="tag tag-purple">Google ADK</span>
+      <span class="tag tag-green">dbt</span>
+      <span class="tag tag-green">Cube.js</span>
+      <span class="tag tag-green">Superset</span>
+      <span class="tag tag-blue">Terraform</span>
+      <span class="tag tag-blue">Kubernetes</span>
+      <span class="tag tag-purple">Kafka</span>
+      <span class="tag tag-purple">.NET</span>
     </div>
   </div>
 
   <!-- WellSky — Staff -->
-  <div class="exp-card reveal" data-expandable>
+  <div class="exp-card reveal" style="--d:80" data-expandable>
     <div class="exp-meta">
       <div class="exp-logo"><img src="https://wellsky.com/favicon.ico" alt="WellSky"></div>
       <div class="exp-info">
@@ -547,44 +629,42 @@ footer a:hover { color: var(--accent); }
       </div>
     </div>
     <div class="exp-summary">
-      Directed enterprise <span class="hi">GCP data fabric</span> serving 20,000+ clinics with HIPAA compliance. Delivered <span class="accent">$2.4M new revenue</span> and secured <span class="accent">$3.5M AI/ML platform investments</span>. Architected <span class="accent">80TB zero-downtime</span> Cloud SQL migration. Built event-driven architecture processing <span class="accent">500M+ daily events</span>.
+      Directed enterprise <span class="hi">GCP data fabric</span> serving 20,000+ clinics. Delivered <span class="accent">$2.4M new revenue</span> and secured <span class="accent2">$3.5M AI/ML investments</span>. Architected <span class="accent3">80TB zero-downtime</span> Cloud SQL migration. Built event-driven architecture processing <span class="accent">500M+ daily events</span>.
     </div>
 
     <div class="exp-details">
       <ul class="exp-bullets">
-        <li>Architect enterprise <span class="hi">Dataform</span> ELT platform with data contracts and CDC connectors, establishing the foundational data warehouse</li>
-        <li>Champion <span class="hi">MLOps maturity</span> with Vertex AI Pipelines, Kubeflow, and MLflow for model lifecycle management, driving <span class="accent">15%</span> care improvement</li>
-        <li>Implement model governance with explainability (SHAP/LIME), drift detection, and automated retraining ensuring <span class="accent">&gt;95%</span> accuracy</li>
-        <li>Architect <span class="accent">80TB</span> zero-downtime migration to Cloud SQL with Spacelift orchestration. Achieve <span class="accent">99.95%</span> uptime processing 15TB daily</li>
-        <li>Design event-driven architecture processing <span class="accent">500M+</span> daily events (Pub/Sub, Dataflow) with real-time CDC via Datastream, enabling &lt;2 min data freshness</li>
-        <li>Establish Infrastructure as Code across 15+ GCP projects achieving <span class="accent">$840K</span> annual savings through FinOps</li>
-        <li>Implement Cloud Armor and Identity-Aware Proxy for zero-trust security, achieving <span class="hi">SOC 2 compliance</span> with zero critical findings</li>
-        <li>Build <span class="hi">Dataplex data mesh</span> empowering 8 domain teams with self-service data products, cutting cross-team dependencies <span class="accent">55%</span></li>
-        <li>Build knowledge graph with ontology-driven entity resolution enabling semantic search and GraphRAG retrieval. Deploy <span class="accent">24x7</span> autonomous AI agents reducing MTTR <span class="accent">70%</span></li>
-        <li>Define OKRs and engineering roadmap. Establish data contracts and SLOs reducing cross-team data incidents <span class="accent">70%</span></li>
+        <li>Architect enterprise <span class="hi">Dataform</span> ELT platform with data contracts and CDC connectors</li>
+        <li>Champion <span class="hi">MLOps maturity</span> with Vertex AI Pipelines, Kubeflow, and MLflow driving <span class="accent3">15%</span> care improvement</li>
+        <li>Implement model governance with explainability (SHAP/LIME) and drift detection ensuring <span class="accent3">&gt;95%</span> accuracy</li>
+        <li>Architect <span class="accent">80TB</span> zero-downtime migration to Cloud SQL with Spacelift orchestration. Achieve <span class="accent3">99.95%</span> uptime</li>
+        <li>Design event-driven architecture processing <span class="accent">500M+</span> daily events with real-time CDC, enabling &lt;2 min data freshness</li>
+        <li>Establish IaC across 15+ GCP projects achieving <span class="accent3">$840K</span> annual savings through FinOps</li>
+        <li>Implement Cloud Armor and Identity-Aware Proxy for zero-trust security, achieving <span class="hi">SOC 2 compliance</span></li>
+        <li>Build <span class="hi">Dataplex data mesh</span> empowering 8 domain teams, cutting cross-team dependencies <span class="accent3">55%</span></li>
+        <li>Build knowledge graph with ontology-driven entity resolution. Deploy <span class="accent">24x7</span> autonomous AI agents reducing MTTR <span class="accent3">70%</span></li>
+        <li>Establish data contracts and SLOs reducing cross-team data incidents <span class="accent3">70%</span></li>
       </ul>
     </div>
 
-    <button class="exp-toggle" aria-label="Show more details">
-      <span class="arrow">▸</span> Show all 10 highlights
-    </button>
+    <button class="exp-toggle"><span class="arrow">▸</span> Show all 10 highlights</button>
 
     <div class="exp-tags">
-      <span class="tag">GCP</span>
-      <span class="tag">Dataform</span>
-      <span class="tag">Vertex AI</span>
-      <span class="tag">BigQuery</span>
-      <span class="tag">Terraform</span>
-      <span class="tag">Kubernetes</span>
-      <span class="tag">Spacelift</span>
-      <span class="tag">MLflow</span>
+      <span class="tag tag-blue">GCP</span>
+      <span class="tag tag-green">Dataform</span>
+      <span class="tag tag-purple">Vertex AI</span>
+      <span class="tag tag-blue">BigQuery</span>
+      <span class="tag tag-blue">Terraform</span>
+      <span class="tag tag-blue">Kubernetes</span>
+      <span class="tag tag-green">Spacelift</span>
+      <span class="tag tag-purple">MLflow</span>
     </div>
   </div>
 
   <!-- UCT -->
-  <div class="exp-card reveal" data-expandable>
+  <div class="exp-card reveal" style="--d:160" data-expandable>
     <div class="exp-meta">
-      <div class="exp-logo" style="background:linear-gradient(135deg,#1a3a5c,#0d2137);color:#64ffda;font-size:11px">UCT</div>
+      <div class="exp-logo" style="background:linear-gradient(135deg,#1e3a5f,#0f1f33)">UCT</div>
       <div class="exp-info">
         <div class="exp-title-row">
           <span class="exp-role">Senior Data Engineer</span>
@@ -594,44 +674,42 @@ footer a:hover { color: var(--accent); }
       </div>
     </div>
     <div class="exp-summary">
-      Architected enterprise <span class="hi">AWS cloud data platform</span> supporting $120M manufacturing operations. Delivered <span class="accent">$6.5M annual savings</span> through data-driven optimization. Built ML-powered quoting at <span class="accent">99% accuracy</span>, NLP automation <span class="accent">18x faster</span>, and anomaly detection saving <span class="accent">$800K/yr</span>.
+      Architected enterprise <span class="hi">AWS cloud data platform</span> supporting $120M manufacturing operations. Delivered <span class="accent3">$6.5M annual savings</span>. Built ML-powered quoting at <span class="accent3">99% accuracy</span>, NLP automation <span class="accent3">18x faster</span>, and anomaly detection saving <span class="accent3">$800K/yr</span>.
     </div>
 
     <div class="exp-details">
       <ul class="exp-bullets">
-        <li>Architect enterprise <span class="hi">AWS cloud data platform</span> (S3, Redshift, EMR) with lakehouse and Delta Lake, supporting <span class="accent">$120M</span> manufacturing operations</li>
-        <li>Direct <span class="hi">ML-powered quoting system</span> achieving 99% accuracy with XGBoost, eliminating 85% manual effort (48→2 hr). Deploy embedded analytics for 50+ B2B customers generating <span class="accent">$1.2M revenue</span></li>
-        <li>Pioneer <span class="hi">NLP automation</span> for bill-of-materials using BERT and spaCy, reducing processing time <span class="accent">18x</span> and improving accuracy from 60% to 98%</li>
-        <li>Build <span class="hi">anomaly detection</span> using Isolation Forest and autoencoders, identifying defects 24 hours earlier saving <span class="accent">$800K/yr</span>. Create digital twin models optimizing throughput <span class="accent">18%</span></li>
-        <li>Establish predictive analytics with Prophet and LSTM reducing inventory 25%, and computer vision quality inspection at 95% accuracy</li>
-        <li>Design real-time CDC pipelines using Debezium and Kafka Connect replicating 30+ source systems. Build scalable ETL processing 10TB+ daily (12→2 hours)</li>
-        <li>Architect multi-tenant data platform with row-level security serving 50+ B2B customers. Establish data governance with AWS Lake Formation</li>
-        <li>Implement FinOps achieving <span class="accent">35%</span> cloud cost reduction. Lead capacity planning reducing over-provisioning 50%</li>
-        <li>Establish MDM program creating golden records for <span class="accent">2M+</span> customer entities, improving data accuracy 85%</li>
-        <li>Build metadata-driven ETL framework reducing new pipeline development from 2 weeks to 2 days</li>
+        <li>Architect enterprise <span class="hi">AWS cloud data platform</span> (S3, Redshift, EMR) with lakehouse and Delta Lake</li>
+        <li>Direct <span class="hi">ML-powered quoting system</span> at 99% accuracy with XGBoost, eliminating 85% manual effort. Deploy embedded analytics generating <span class="accent">$1.2M revenue</span></li>
+        <li>Pioneer <span class="hi">NLP automation</span> for bill-of-materials using BERT and spaCy, reducing processing time <span class="accent3">18x</span></li>
+        <li>Build <span class="hi">anomaly detection</span> using Isolation Forest and autoencoders saving <span class="accent3">$800K/yr</span>. Create digital twin models optimizing throughput <span class="accent3">18%</span></li>
+        <li>Establish predictive analytics with Prophet and LSTM reducing inventory 25%</li>
+        <li>Design real-time CDC pipelines using Debezium and Kafka Connect replicating 30+ source systems</li>
+        <li>Architect multi-tenant data platform with RLS serving 50+ B2B customers</li>
+        <li>Implement FinOps achieving <span class="accent3">35%</span> cloud cost reduction</li>
+        <li>Establish MDM program for <span class="accent">2M+</span> customer entities improving data accuracy 85%</li>
+        <li>Build metadata-driven ETL framework cutting pipeline development from 2 weeks to 2 days</li>
       </ul>
     </div>
 
-    <button class="exp-toggle" aria-label="Show more details">
-      <span class="arrow">▸</span> Show all 10 highlights
-    </button>
+    <button class="exp-toggle"><span class="arrow">▸</span> Show all 10 highlights</button>
 
     <div class="exp-tags">
-      <span class="tag">AWS</span>
-      <span class="tag">Spark</span>
-      <span class="tag">TensorFlow</span>
-      <span class="tag">BERT</span>
-      <span class="tag">Redshift</span>
-      <span class="tag">Airflow</span>
-      <span class="tag">Kafka</span>
-      <span class="tag">Delta Lake</span>
+      <span class="tag tag-blue">AWS</span>
+      <span class="tag tag-purple">Spark</span>
+      <span class="tag tag-purple">TensorFlow</span>
+      <span class="tag tag-purple">BERT</span>
+      <span class="tag tag-blue">Redshift</span>
+      <span class="tag tag-green">Airflow</span>
+      <span class="tag tag-green">Kafka</span>
+      <span class="tag tag-green">Delta Lake</span>
     </div>
   </div>
 
   <!-- reNature -->
-  <div class="exp-card reveal">
+  <div class="exp-card reveal" style="--d:240">
     <div class="exp-meta">
-      <div class="exp-logo">rN</div>
+      <div class="exp-logo" style="background:linear-gradient(135deg,#1a3330,#0f1f1d);color:#34d399">rN</div>
       <div class="exp-info">
         <div class="exp-title-row">
           <span class="exp-role">Controls Engineer</span>
@@ -640,23 +718,20 @@ footer a:hover { color: var(--accent); }
         <div class="exp-company">reNature, Inc. · Phoenix, AZ</div>
       </div>
     </div>
-    <div class="exp-summary">
-      Designed automated control systems for bioreactor operations using PLC and SCADA, reducing manual intervention by 12 hours per cycle. Built real-time monitoring dashboards with data acquisition pipelines.
-    </div>
+    <div class="exp-summary">Designed automated control systems for bioreactor operations using PLC and SCADA, reducing manual intervention by 12 hours per cycle.</div>
     <div class="exp-tags">
-      <span class="tag">PLC</span>
-      <span class="tag">SCADA</span>
-      <span class="tag">Python</span>
+      <span class="tag tag-green">PLC</span>
+      <span class="tag tag-green">SCADA</span>
+      <span class="tag tag-purple">Python</span>
     </div>
   </div>
 </section>
 
-<!-- SKILLS (Bento Grid) -->
+<!-- SKILLS -->
 <section id="skills">
   <div class="section-label">Skills</div>
   <div class="bento-grid">
-
-    <div class="bento-card span-2 reveal" style="--i:0">
+    <div class="bento-card span-2 reveal" style="--d:0" data-color="blue">
       <div class="bento-title">Cloud Platforms</div>
       <div class="pills">
         <span class="pill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/googlecloud/googlecloud-original.svg" alt="">GCP</span>
@@ -671,7 +746,7 @@ footer a:hover { color: var(--accent); }
       </div>
     </div>
 
-    <div class="bento-card reveal" style="--i:1">
+    <div class="bento-card reveal" style="--d:60" data-color="purple">
       <div class="bento-title">AI / ML</div>
       <div class="pills">
         <span class="pill">Agentic AI</span>
@@ -688,7 +763,7 @@ footer a:hover { color: var(--accent); }
       </div>
     </div>
 
-    <div class="bento-card reveal" style="--i:2">
+    <div class="bento-card reveal" style="--d:120" data-color="green">
       <div class="bento-title">Data Engineering</div>
       <div class="pills">
         <span class="pill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/apachespark/apachespark-original.svg" alt="">Spark</span>
@@ -703,7 +778,7 @@ footer a:hover { color: var(--accent); }
       </div>
     </div>
 
-    <div class="bento-card span-2 reveal" style="--i:3">
+    <div class="bento-card span-2 reveal" style="--d:180" data-color="multi">
       <div class="bento-title">Infrastructure & DevOps</div>
       <div class="pills">
         <span class="pill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/terraform/terraform-original.svg" alt="">Terraform</span>
@@ -717,7 +792,7 @@ footer a:hover { color: var(--accent); }
       </div>
     </div>
 
-    <div class="bento-card reveal" style="--i:4">
+    <div class="bento-card reveal" style="--d:240" data-color="purple">
       <div class="bento-title">Programming</div>
       <div class="pills">
         <span class="pill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg" alt="">Python</span>
@@ -730,29 +805,14 @@ footer a:hover { color: var(--accent); }
         <span class="pill">GraphQL</span>
       </div>
     </div>
-
-    <div class="bento-card reveal" style="--i:5">
-      <div class="bento-title">Architecture</div>
-      <div class="pills">
-        <span class="pill">Data Mesh</span>
-        <span class="pill">Data Contracts</span>
-        <span class="pill">Lakehouse</span>
-        <span class="pill">Semantic Layer</span>
-        <span class="pill">FinOps</span>
-        <span class="pill">HIPAA</span>
-        <span class="pill">SOC 2</span>
-        <span class="pill">Data Lineage</span>
-      </div>
-    </div>
-
   </div>
 </section>
 
-<!-- EDUCATION & CERTIFICATIONS -->
+<!-- EDUCATION -->
 <section id="education">
   <div class="section-label">Education & Certifications</div>
 
-  <div class="edu-card reveal">
+  <div class="edu-card reveal" style="--d:0">
     <div class="edu-left">
       <div class="edu-icon" style="background:linear-gradient(135deg,#8C1D40,#5a0f28);color:#FFC627">ASU</div>
       <div>
@@ -763,7 +823,7 @@ footer a:hover { color: var(--accent); }
     <div class="edu-year">2015</div>
   </div>
 
-  <div class="edu-card reveal">
+  <div class="edu-card reveal" style="--d:60">
     <div class="edu-left">
       <div class="edu-icon" style="background:linear-gradient(135deg,#003366,#001a33);color:#FFD700">OU</div>
       <div>
@@ -774,7 +834,7 @@ footer a:hover { color: var(--accent); }
     <div class="edu-year">2013</div>
   </div>
 
-  <div class="certs-row reveal">
+  <div class="certs-row reveal" style="--d:120">
     <span class="cert-badge"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/googlecloud/googlecloud-original.svg" alt=""> GCP Professional Data Engineer</span>
     <span class="cert-badge"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/amazonwebservices/amazonwebservices-original-wordmark.svg" alt=""> AWS Solutions Architect</span>
     <span class="cert-badge">&#9733; PMP</span>
@@ -787,107 +847,68 @@ footer a:hover { color: var(--accent); }
 <!-- WRITING -->
 <section id="writing">
   <div class="section-label">Writing</div>
+  <div class="writing-grid">
 
-  <a href="writing/rag-architecture-patterns.html" class="writing-card reveal">
-    <div class="writing-title">RAG Architecture Patterns <span class="arrow-link">↗</span></div>
-    <div class="writing-meta">July 2026 · 14 min read</div>
-    <div class="writing-desc">Chunking strategies, embedding models, vector stores, hybrid search, reranking pipelines, and evaluation frameworks.</div>
-    <div class="exp-tags">
-      <span class="tag">RAG</span>
-      <span class="tag">Embeddings</span>
-      <span class="tag">Vector DB</span>
-      <span class="tag">LLM</span>
-    </div>
-  </a>
+    <a href="writing/rag-architecture-patterns.html" class="writing-card reveal" style="--d:0">
+      <div class="writing-title">RAG Architecture Patterns <span class="arrow-link">↗</span></div>
+      <div class="writing-meta">Jul 2026 · 14 min</div>
+      <div class="writing-desc">Chunking strategies, embedding models, vector stores, hybrid search, reranking pipelines, and evaluation frameworks.</div>
+      <div class="exp-tags"><span class="tag tag-purple">RAG</span><span class="tag tag-purple">Embeddings</span><span class="tag tag-blue">Vector DB</span></div>
+    </a>
 
-  <a href="writing/llm-agents-tool-use.html" class="writing-card reveal">
-    <div class="writing-title">LLM Agents & Tool Use <span class="arrow-link">↗</span></div>
-    <div class="writing-meta">July 2026 · 13 min read</div>
-    <div class="writing-desc">Agent architectures (ReAct, plan-and-execute, multi-agent), function calling, orchestration, memory, and guardrails.</div>
-    <div class="exp-tags">
-      <span class="tag">Agents</span>
-      <span class="tag">LangGraph</span>
-      <span class="tag">Function Calling</span>
-      <span class="tag">Guardrails</span>
-    </div>
-  </a>
+    <a href="writing/llm-agents-tool-use.html" class="writing-card reveal" style="--d:60">
+      <div class="writing-title">LLM Agents & Tool Use <span class="arrow-link">↗</span></div>
+      <div class="writing-meta">Jul 2026 · 13 min</div>
+      <div class="writing-desc">Agent architectures (ReAct, plan-and-execute, multi-agent), function calling, orchestration, memory, and guardrails.</div>
+      <div class="exp-tags"><span class="tag tag-purple">Agents</span><span class="tag tag-green">LangGraph</span><span class="tag tag-blue">Guardrails</span></div>
+    </a>
 
-  <a href="writing/model-context-protocol.html" class="writing-card reveal">
-    <div class="writing-title">MCP: The Model Context Protocol <span class="arrow-link">↗</span></div>
-    <div class="writing-meta">July 2026 · 12 min read</div>
-    <div class="writing-desc">How MCP standardizes AI tool integration — architecture, primitives, building servers, and multi-server orchestration.</div>
-    <div class="exp-tags">
-      <span class="tag">MCP</span>
-      <span class="tag">Tool Use</span>
-      <span class="tag">Claude</span>
-      <span class="tag">Integration</span>
-    </div>
-  </a>
+    <a href="writing/model-context-protocol.html" class="writing-card reveal" style="--d:120">
+      <div class="writing-title">MCP: The Model Context Protocol <span class="arrow-link">↗</span></div>
+      <div class="writing-meta">Jul 2026 · 12 min</div>
+      <div class="writing-desc">How MCP standardizes AI tool integration — architecture, primitives, building servers, and multi-server orchestration.</div>
+      <div class="exp-tags"><span class="tag tag-purple">MCP</span><span class="tag tag-blue">Tool Use</span><span class="tag tag-green">Integration</span></div>
+    </a>
 
-  <a href="writing/analytics-stack-architecture.html" class="writing-card reveal">
-    <div class="writing-title">Building a Modern Analytics Stack <span class="arrow-link">↗</span></div>
-    <div class="writing-meta">July 2026 · 15 min read</div>
-    <div class="writing-desc">5-layer architecture with Cube.js, Superset, BigQuery, DuckDB, and Redis — from warehouse to embedded dashboards.</div>
-    <div class="exp-tags">
-      <span class="tag">Cube.js</span>
-      <span class="tag">Superset</span>
-      <span class="tag">BigQuery</span>
-      <span class="tag">DuckDB</span>
-    </div>
-  </a>
+    <a href="writing/analytics-stack-architecture.html" class="writing-card reveal" style="--d:180">
+      <div class="writing-title">Building a Modern Analytics Stack <span class="arrow-link">↗</span></div>
+      <div class="writing-meta">Jul 2026 · 15 min</div>
+      <div class="writing-desc">5-layer architecture with Cube.js, Superset, BigQuery, DuckDB, and Redis — from warehouse to embedded dashboards.</div>
+      <div class="exp-tags"><span class="tag tag-green">Cube.js</span><span class="tag tag-green">Superset</span><span class="tag tag-blue">BigQuery</span></div>
+    </a>
 
-  <a href="writing/replacing-legacy-bi.html" class="writing-card reveal">
-    <div class="writing-title">Replacing Legacy BI: A Migration Playbook <span class="arrow-link">↗</span></div>
-    <div class="writing-meta">July 2026 · 12 min read</div>
-    <div class="writing-desc">How to migrate from $450K/yr commercial BI to a $21K/yr open-source stack with AI-powered analytics.</div>
-    <div class="exp-tags">
-      <span class="tag">Migration</span>
-      <span class="tag">Dataform</span>
-      <span class="tag">GCP</span>
-      <span class="tag">NLQ</span>
-    </div>
-  </a>
+    <a href="writing/replacing-legacy-bi.html" class="writing-card reveal" style="--d:240">
+      <div class="writing-title">Replacing Legacy BI <span class="arrow-link">↗</span></div>
+      <div class="writing-meta">Jul 2026 · 12 min</div>
+      <div class="writing-desc">How to migrate from $450K/yr commercial BI to a $21K/yr open-source stack with AI-powered analytics.</div>
+      <div class="exp-tags"><span class="tag tag-green">Migration</span><span class="tag tag-blue">GCP</span><span class="tag tag-purple">NLQ</span></div>
+    </a>
 
-  <a href="writing/terraform-at-scale.html" class="writing-card reveal">
-    <div class="writing-title">Terraform at Scale: IaC Architecture <span class="arrow-link">↗</span></div>
-    <div class="writing-meta">July 2026 · 14 min read</div>
-    <div class="writing-desc">Module design, state management, multi-environment patterns, Spacelift CI/CD, and GCP infrastructure patterns.</div>
-    <div class="exp-tags">
-      <span class="tag">Terraform</span>
-      <span class="tag">IaC</span>
-      <span class="tag">Spacelift</span>
-      <span class="tag">GitOps</span>
-    </div>
-  </a>
+    <a href="writing/terraform-at-scale.html" class="writing-card reveal" style="--d:300">
+      <div class="writing-title">Terraform at Scale <span class="arrow-link">↗</span></div>
+      <div class="writing-meta">Jul 2026 · 14 min</div>
+      <div class="writing-desc">Module design, state management, multi-environment patterns, Spacelift CI/CD, and GCP infrastructure patterns.</div>
+      <div class="exp-tags"><span class="tag tag-blue">Terraform</span><span class="tag tag-green">Spacelift</span><span class="tag tag-blue">GitOps</span></div>
+    </a>
 
-  <a href="writing/data-lakehouse-gcp.html" class="writing-card reveal">
-    <div class="writing-title">Data Lakehouse on GCP <span class="arrow-link">↗</span></div>
-    <div class="writing-meta">July 2026 · 13 min read</div>
-    <div class="writing-desc">Delta Lake vs Iceberg, BigLake, medallion architecture, partition pruning, and schema evolution on Google Cloud.</div>
-    <div class="exp-tags">
-      <span class="tag">Lakehouse</span>
-      <span class="tag">Iceberg</span>
-      <span class="tag">BigQuery</span>
-      <span class="tag">GCP</span>
-    </div>
-  </a>
+    <a href="writing/data-lakehouse-gcp.html" class="writing-card reveal" style="--d:360">
+      <div class="writing-title">Data Lakehouse on GCP <span class="arrow-link">↗</span></div>
+      <div class="writing-meta">Jul 2026 · 13 min</div>
+      <div class="writing-desc">Delta Lake vs Iceberg, BigLake, medallion architecture, partition pruning, and schema evolution.</div>
+      <div class="exp-tags"><span class="tag tag-green">Lakehouse</span><span class="tag tag-green">Iceberg</span><span class="tag tag-blue">BigQuery</span></div>
+    </a>
 
-  <a href="writing/etl-architecture-patterns.html" class="writing-card reveal">
-    <div class="writing-title">ETL Architecture: From Raw to Reporting <span class="arrow-link">↗</span></div>
-    <div class="writing-meta">July 2026 · 14 min read</div>
-    <div class="writing-desc">Modern ELT patterns, 5-layer model, Dataform vs dbt vs Airflow, CDC, data quality gates, and orchestration.</div>
-    <div class="exp-tags">
-      <span class="tag">ELT</span>
-      <span class="tag">Dataform</span>
-      <span class="tag">dbt</span>
-      <span class="tag">CDC</span>
-    </div>
-  </a>
+    <a href="writing/etl-architecture-patterns.html" class="writing-card reveal" style="--d:420">
+      <div class="writing-title">ETL Architecture Patterns <span class="arrow-link">↗</span></div>
+      <div class="writing-meta">Jul 2026 · 14 min</div>
+      <div class="writing-desc">Modern ELT patterns, 5-layer model, Dataform vs dbt vs Airflow, CDC, data quality gates.</div>
+      <div class="exp-tags"><span class="tag tag-green">ELT</span><span class="tag tag-green">dbt</span><span class="tag tag-purple">CDC</span></div>
+    </a>
 
+  </div>
 </section>
 
-<!-- FOOTER -->
-<footer class="reveal">
+<footer class="reveal" style="--d:0">
   <p>Built with vanilla HTML & CSS. Inspired by <a href="https://brittanychiang.com" target="_blank">Brittany Chiang</a>.</p>
   <p>&copy; 2026 Anvesh Jarabani</p>
 </footer>
@@ -896,14 +917,14 @@ footer a:hover { color: var(--accent); }
 </div>
 
 <script>
-// Cursor spotlight
+// Spotlight
 const spotlight = document.getElementById('spotlight');
 document.addEventListener('mousemove', e => {
   spotlight.style.background =
-    `radial-gradient(600px at ${e.clientX}px ${e.clientY}px, rgba(29,78,216,0.06), transparent 80%)`;
+    `radial-gradient(700px at ${e.clientX}px ${e.clientY}px, rgba(56,189,248,0.04), transparent 70%)`;
 });
 
-// Scroll spy for sidebar nav
+// Scroll spy
 const navLinks = document.querySelectorAll('.sidebar-nav a');
 const sections = document.querySelectorAll('section[id]');
 const spy = new IntersectionObserver(entries => {
@@ -917,17 +938,16 @@ const spy = new IntersectionObserver(entries => {
 }, { rootMargin: '-20% 0px -75% 0px' });
 sections.forEach(s => spy.observe(s));
 
-// Smooth scroll for nav links
+// Smooth scroll
 navLinks.forEach(a => {
   a.addEventListener('click', e => {
     e.preventDefault();
-    const t = document.querySelector(a.getAttribute('href'));
-    if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.querySelector(a.getAttribute('href'))
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 });
 
-// Scroll reveal animations
-const revealEls = document.querySelectorAll('.reveal');
+// Scroll reveal with stagger
 const revealObs = new IntersectionObserver(entries => {
   entries.forEach(entry => {
     if (entry.isIntersecting) {
@@ -935,22 +955,24 @@ const revealObs = new IntersectionObserver(entries => {
       revealObs.unobserve(entry.target);
     }
   });
-}, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
-revealEls.forEach(el => revealObs.observe(el));
+}, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
+document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
 
-// Expand/collapse experience cards
+// Sidebar entrance
+requestAnimationFrame(() => {
+  document.getElementById('sidebar').classList.add('sidebar-loaded');
+});
+
+// Expand/collapse
 document.querySelectorAll('[data-expandable] .exp-toggle').forEach(btn => {
   btn.addEventListener('click', () => {
     const card = btn.closest('.exp-card');
     const wasExpanded = card.classList.contains('expanded');
     card.classList.toggle('expanded');
     const count = card.querySelector('.exp-details .exp-bullets').children.length;
-    btn.querySelector('.arrow').textContent = '▸';
-    if (wasExpanded) {
-      btn.childNodes[btn.childNodes.length - 1].textContent = ` Show all ${count} highlights`;
-    } else {
-      btn.childNodes[btn.childNodes.length - 1].textContent = ' Show less';
-    }
+    btn.innerHTML = wasExpanded
+      ? `<span class="arrow">▸</span> Show all ${count} highlights`
+      : '<span class="arrow" style="transform:rotate(90deg)">▸</span> Show less';
   });
 });
 </script>
