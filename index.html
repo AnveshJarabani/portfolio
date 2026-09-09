@@ -170,28 +170,33 @@ section:last-of-type::after { display: none; }
   margin-top: 28px;
 }
 .stat-card {
-  background: var(--bg-card);
-  border: 1px solid var(--glass-border);
-  border-radius: 16px; padding: 20px 12px;
+  border-radius: 16px; padding: 22px 16px;
   text-align: center; transition: all 0.4s cubic-bezier(.4,0,.2,1);
   position: relative; overflow: hidden;
+  border: 1px solid transparent;
 }
-.stat-card::before {
-  content: ''; position: absolute; inset: 0;
-  background: var(--gradient); opacity: 0;
-  transition: opacity 0.4s; border-radius: 16px;
+.stat-card:nth-child(1) { background: rgba(56,189,248,0.08); border-color: rgba(56,189,248,0.15); }
+.stat-card:nth-child(2) { background: rgba(52,211,153,0.08); border-color: rgba(52,211,153,0.15); }
+.stat-card:nth-child(3) { background: rgba(167,139,250,0.08); border-color: rgba(167,139,250,0.15); }
+.stat-card:nth-child(4) { background: rgba(56,189,248,0.08); border-color: rgba(56,189,248,0.15); }
+.stat-card:hover { transform: translateY(-4px); }
+.stat-card:nth-child(1):hover { box-shadow: 0 8px 32px rgba(56,189,248,0.15); border-color: rgba(56,189,248,0.3); }
+.stat-card:nth-child(2):hover { box-shadow: 0 8px 32px rgba(52,211,153,0.15); border-color: rgba(52,211,153,0.3); }
+.stat-card:nth-child(3):hover { box-shadow: 0 8px 32px rgba(167,139,250,0.15); border-color: rgba(167,139,250,0.3); }
+.stat-card:nth-child(4):hover { box-shadow: 0 8px 32px rgba(56,189,248,0.15); border-color: rgba(56,189,248,0.3); }
+.stat-icon {
+  font-size: 22px; margin-bottom: 8px; display: block;
 }
-.stat-card:hover { transform: translateY(-4px); border-color: transparent; }
-.stat-card:hover::before { opacity: 0.06; }
 .stat-num {
-  font-size: 30px; font-weight: 900; line-height: 1.1;
-  letter-spacing: -1px; position: relative;
-  background: var(--gradient);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  background-clip: text;
+  font-size: 32px; font-weight: 900; line-height: 1.1;
+  letter-spacing: -1.5px; position: relative;
 }
+.stat-card:nth-child(1) .stat-num { color: var(--accent); }
+.stat-card:nth-child(2) .stat-num { color: var(--accent3); }
+.stat-card:nth-child(3) .stat-num { color: var(--accent2); }
+.stat-card:nth-child(4) .stat-num { color: var(--accent); }
 .stat-label {
-  font-size: 10px; color: var(--text-dim); text-transform: uppercase;
+  font-size: 10px; color: var(--text-sec); text-transform: uppercase;
   letter-spacing: 1.5px; margin-top: 6px; font-weight: 600;
   position: relative;
 }
@@ -295,30 +300,48 @@ section:last-of-type::after { display: none; }
   gap: 12px;
 }
 .bento-card {
-  background: var(--bg-card);
   border: 1px solid var(--glass-border);
   border-radius: 16px; padding: 24px;
   transition: all 0.4s cubic-bezier(.4,0,.2,1);
   position: relative; overflow: hidden;
 }
+.bento-card[data-color="blue"] {
+  background: rgba(56,189,248,0.06);
+  border-color: rgba(56,189,248,0.12);
+}
+.bento-card[data-color="purple"] {
+  background: rgba(167,139,250,0.06);
+  border-color: rgba(167,139,250,0.12);
+}
+.bento-card[data-color="green"] {
+  background: rgba(52,211,153,0.06);
+  border-color: rgba(52,211,153,0.12);
+}
+.bento-card[data-color="multi"] {
+  background: linear-gradient(135deg, rgba(56,189,248,0.06), rgba(167,139,250,0.06), rgba(52,211,153,0.06));
+  border-color: rgba(148,163,184,0.1);
+}
 .bento-card::after {
   content: ''; position: absolute; top: 0; left: 0; right: 0;
   height: 2px; border-radius: 16px 16px 0 0;
-  opacity: 0; transition: opacity 0.4s;
+  transition: opacity 0.4s;
 }
 .bento-card:hover {
   transform: translateY(-4px);
-  border-color: rgba(148,163,184,0.12);
   box-shadow: 0 12px 40px rgba(0,0,0,0.3);
 }
-.bento-card:hover::after { opacity: 1; }
+.bento-card[data-color="blue"]:hover { border-color: rgba(56,189,248,0.3); box-shadow: 0 12px 40px rgba(56,189,248,0.1); }
+.bento-card[data-color="purple"]:hover { border-color: rgba(167,139,250,0.3); box-shadow: 0 12px 40px rgba(167,139,250,0.1); }
+.bento-card[data-color="green"]:hover { border-color: rgba(52,211,153,0.3); box-shadow: 0 12px 40px rgba(52,211,153,0.1); }
+.bento-card[data-color="multi"]:hover { border-color: rgba(167,139,250,0.25); box-shadow: 0 12px 40px rgba(167,139,250,0.1); }
 .bento-card.span-2 { grid-column: span 2; }
 
 /* Color-coded card tops */
-.bento-card[data-color="blue"]::after { background: var(--accent); }
-.bento-card[data-color="purple"]::after { background: var(--accent2); }
-.bento-card[data-color="green"]::after { background: var(--accent3); }
-.bento-card[data-color="multi"]::after { background: var(--gradient); }
+.bento-card[data-color="blue"]::after { background: var(--accent); opacity: 0.6; }
+.bento-card[data-color="purple"]::after { background: var(--accent2); opacity: 0.6; }
+.bento-card[data-color="green"]::after { background: var(--accent3); opacity: 0.6; }
+.bento-card[data-color="multi"]::after { background: var(--gradient); opacity: 0.6; }
+.bento-card:hover::after { opacity: 1; }
 
 .bento-title {
   font-size: 12px; font-weight: 700; text-transform: uppercase;
@@ -564,10 +587,10 @@ footer a:hover { color: var(--accent); }
   </div>
 
   <div class="stats-row">
-    <div class="stat-card reveal" style="--d:200"><div class="stat-num">11+</div><div class="stat-label">Years</div></div>
-    <div class="stat-card reveal" style="--d:260"><div class="stat-num">$10M+</div><div class="stat-label">Value</div></div>
-    <div class="stat-card reveal" style="--d:320"><div class="stat-num">658</div><div class="stat-label">Repos</div></div>
-    <div class="stat-card reveal" style="--d:380"><div class="stat-num">20K+</div><div class="stat-label">Clinics</div></div>
+    <div class="stat-card reveal" style="--d:200"><span class="stat-icon">&#9200;</span><div class="stat-num">11+</div><div class="stat-label">Years Experience</div></div>
+    <div class="stat-card reveal" style="--d:260"><span class="stat-icon">&#128200;</span><div class="stat-num">$10M+</div><div class="stat-label">Business Value</div></div>
+    <div class="stat-card reveal" style="--d:320"><span class="stat-icon">&#128187;</span><div class="stat-num">658</div><div class="stat-label">Repositories</div></div>
+    <div class="stat-card reveal" style="--d:380"><span class="stat-icon">&#127973;</span><div class="stat-num">20K+</div><div class="stat-label">Clinics Served</div></div>
   </div>
 </section>
 
