@@ -4,7 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Anvesh Jarabani — Staff Data & AI Engineering Leader</title>
-<script>if('scrollRestoration' in history)history.scrollRestoration='manual';if(location.hash)history.replaceState(null,'',location.pathname);window.addEventListener('DOMContentLoaded',function(){window.scrollTo(0,0)});window.addEventListener('load',function(){window.scrollTo(0,0)});</script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -224,6 +223,7 @@ footer a { color: var(--text-sec); font-weight: 500; }
 footer a:hover { color: var(--accent); }
 
 .fade-up {
+  opacity: 0;
   transform: translateY(16px);
   transition: opacity 0.5s ease, transform 0.5s ease;
 }
@@ -703,16 +703,7 @@ const fadeObs = new IntersectionObserver(entries => {
     }
   });
 }, { threshold: 0.1 });
-if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
-window.scrollTo(0, 0);
-fadeEls.forEach(el => {
-  if (el.getBoundingClientRect().top < window.innerHeight) {
-    el.classList.add('visible');
-  } else {
-    el.style.opacity = '0';
-    fadeObs.observe(el);
-  }
-});
+fadeEls.forEach(el => fadeObs.observe(el));
 </script>
 
 </body>
