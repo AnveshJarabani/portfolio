@@ -143,8 +143,15 @@ a:hover { color: var(--white); }
 .socials svg { width: 20px; height: 20px; fill: currentColor; }
 
 /* ═══ SECTIONS ═══ */
-section { margin-bottom: 72px; }
-section:last-of-type { margin-bottom: 0; }
+section { margin-bottom: 72px; padding-bottom: 72px; position: relative; }
+section::after {
+  content: '';
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(56,189,248,0.2) 20%, rgba(167,139,250,0.3) 50%, rgba(52,211,153,0.2) 80%, transparent);
+}
+section:last-of-type { margin-bottom: 0; padding-bottom: 0; }
+section:last-of-type::after { display: none; }
 .section-label {
   font-size: 11px; font-weight: 700; text-transform: uppercase;
   letter-spacing: 3px; color: var(--accent); margin-bottom: 28px;
@@ -546,9 +553,9 @@ footer a:hover { color: var(--accent); }
 <section id="about">
   <div class="section-label">About</div>
   <div class="about">
-    <p class="reveal" style="--d:0">Currently at <a href="https://wellsky.com" target="_blank">WellSky</a>, I lead the analytics engineering team building production <span class="hi">agentic RAG platforms</span> on Google ADK and Vertex AI, an AI-powered knowledge system indexing <span class="hi">658 GitHub repos</span> and <span class="hi">31K Confluence pages</span>, and a greenfield <span class="hi">Meridian Analytics Stack</span> delivering <span class="accent2">30 clinical dashboards</span> for hospice operations.</p>
-    <p class="reveal" style="--d:80">Before healthcare, I spent 7 years at <span class="hi">Ultra Clean Technology</span> building AWS data platforms for <span class="hi">$120M manufacturing operations</span> — ML-powered quoting at <span class="accent3">99% accuracy</span>, NLP for bill-of-materials <span class="accent3">18x faster</span>, and anomaly detection saving <span class="accent3">$800K/yr</span>.</p>
-    <p class="reveal" style="--d:160">When I'm not engineering data systems, I'm tinkering with developer tooling, home automation, and finding ways to make repetitive work disappear.</p>
+    <p class="reveal" style="--d:0">Senior staff data and AI engineering leader with <span class="accent">11+ years</span> driving enterprise digital transformation through scalable data platforms, <span class="hi">Generative AI</span> systems, and ML operations. Delivered <span class="accent">$10M+ in measurable business value</span> across two greenfield analytics platforms, enterprise <span class="hi">GenAI</span> adoption, and production ML systems serving <span class="accent">20,000+ clinics</span>.</p>
+    <p class="reveal" style="--d:80">Proven expertise directing multi-cloud strategies (<span class="hi">GCP</span>, <span class="hi">AWS</span>, <span class="hi">Snowflake</span>), building production <span class="hi">agentic RAG</span> and <span class="hi">GraphRAG</span> architectures, establishing <span class="hi">data mesh</span> governance, and leading enterprise <span class="hi">DataOps</span>, <span class="hi">MLOps</span>, and <span class="hi">platform engineering</span> initiatives.</p>
+    <p class="reveal" style="--d:160">Currently at <a href="https://wellsky.com" target="_blank">WellSky</a>, I lead a team building the <span class="hi">Meridian Analytics Stack</span> end-to-end, an <span class="hi">AI-powered knowledge platform</span> indexing <span class="accent2">658 repos</span> and <span class="accent2">31K Confluence pages</span>, and production <span class="hi">agentic RAG</span> on Google ADK and Vertex AI delivering <span class="accent3">30 clinical dashboards</span> for hospice operations.</p>
   </div>
 
   <div class="stats-row">
