@@ -1,0 +1,1246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ETL Architecture: From Raw to Reporting | Anvesh Jarabani</title>
+<script>if("scrollRestoration" in history)history.scrollRestoration="manual";if(location.hash)history.replaceState(null,"",location.pathname);window.addEventListener("DOMContentLoaded",function(){window.scrollTo(0,0)});window.addEventListener("load",function(){window.scrollTo(0,0)});</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a192f;--bg-light:#112240;--border:#233554;
+  --text:#ccd6f6;--text-sec:#a8b2d1;--text-dim:#495670;
+  --accent:#64ffda;--accent-dim:rgba(100,255,218,0.1);
+  --white:#e6f1ff;
+  --red:#f85149;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--gold:#d29922;--teal:#39d2c0;
+}
+::selection{background:rgba(100,255,218,0.2)}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;font-size:15px}
+a{color:var(--accent);text-decoration:none;transition:opacity .2s}
+a:hover{opacity:.8}
+code,.mono{font-family:'JetBrains Mono',monospace;font-size:13px;background:rgba(100,255,218,0.07);padding:2px 6px;border-radius:4px;color:var(--accent)}
+
+.top-bar{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(10,25,47,0.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between}
+.top-bar .back{font-size:13px;color:var(--text-sec);display:flex;align-items:center;gap:6px}
+.top-bar .back:hover{color:var(--accent)}
+.top-bar nav{display:flex;gap:20px}
+.top-bar nav a{font-size:12px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-dim);transition:color .2s}
+.top-bar nav a.active{color:var(--accent)}
+.top-bar nav a:hover{color:var(--text-sec);opacity:1}
+
+.container{max-width:900px;margin:0 auto;padding:92px 24px 60px}
+.hero-title{font-size:clamp(28px,4vw,40px);font-weight:800;color:var(--white);margin-bottom:8px;letter-spacing:-0.5px}
+.hero-sub{font-size:16px;color:var(--text-sec);margin-bottom:8px}
+.hero-meta{font-size:13px;color:var(--text-dim);margin-bottom:40px;display:flex;gap:16px;flex-wrap:wrap}
+
+section{padding:48px 0;border-bottom:1px solid var(--border)}
+section:last-of-type{border-bottom:none}
+.section-title{font-size:13px;text-transform:uppercase;letter-spacing:2px;color:var(--accent);margin-bottom:24px;font-weight:600}
+p.body{color:var(--text-sec);margin-bottom:16px;line-height:1.7}
+
+.fade-up{transform:translateY(16px);transition:opacity .5s ease,transform .5s ease}
+.fade-up.visible{opacity:1;transform:translateY(0)}
+.hi{color:var(--white);font-weight:600}
+.ac{color:var(--accent);font-weight:700}
+
+/* Legacy flow diagram classes removed — replaced with inline SVGs */
+
+/* Layer cards */
+.layer-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin:20px 0}
+.layer-card{background:var(--bg-light);border:1px solid var(--border);border-radius:8px;padding:20px;transition:all .25s}
+.layer-card:hover{border-color:var(--text-dim);box-shadow:0 4px 20px rgba(0,0,0,0.2)}
+.layer-num{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;margin-bottom:4px}
+.layer-name{font-size:16px;font-weight:700;color:var(--white);margin-bottom:6px}
+.layer-desc{font-size:13px;color:var(--text-sec);line-height:1.6;margin-bottom:8px}
+.layer-detail{font-size:11px;color:var(--text-dim);line-height:1.5}
+
+/* Tool cards */
+.tool-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin:20px 0}
+.tool-card{background:var(--bg-light);border:1px solid var(--border);border-radius:8px;padding:20px;transition:all .25s}
+.tool-card:hover{border-color:var(--blue);box-shadow:0 0 20px rgba(88,166,255,0.08)}
+.tool-card .tool-name{font-size:15px;font-weight:600;color:var(--blue);margin-bottom:6px}
+.tool-card .tool-desc{font-size:13px;color:var(--text-sec);line-height:1.6;margin-bottom:8px}
+.tool-card .tool-tags{display:flex;flex-wrap:wrap;gap:4px}
+.tool-card .tool-tag{font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(88,166,255,0.1);color:var(--blue);font-weight:500}
+
+/* Comparison table */
+.cmp-table{width:100%;border-collapse:collapse;margin:20px 0;font-size:13px}
+.cmp-table th{text-align:left;padding:10px 14px;border-bottom:2px solid var(--border);color:var(--text-dim);font-size:11px;text-transform:uppercase;letter-spacing:1px;font-weight:600}
+.cmp-table td{padding:10px 14px;border-bottom:1px solid var(--border);color:var(--text-sec)}
+.cmp-table tr:hover td{background:var(--accent-dim)}
+.cmp-table .check{color:var(--green);font-weight:600}
+.cmp-table .partial{color:var(--gold);font-weight:600}
+.cmp-table .miss{color:var(--text-dim)}
+
+/* CDC cards */
+.cdc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:20px 0}
+.cdc-card{background:var(--bg-light);border:1px solid var(--border);border-radius:8px;padding:16px;transition:all .25s}
+.cdc-card:hover{border-color:var(--purple);box-shadow:0 0 20px rgba(188,140,255,0.08)}
+.cdc-card .cdc-name{font-size:14px;font-weight:600;color:var(--purple);margin-bottom:6px}
+.cdc-card .cdc-desc{font-size:12px;color:var(--text-sec);line-height:1.5;margin-bottom:6px}
+.cdc-card .cdc-tools{font-size:11px;color:var(--text-dim);font-style:italic}
+
+/* Quality checks */
+.quality-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:20px 0}
+.quality-card{background:var(--bg-light);border:1px solid var(--border);border-radius:8px;padding:16px;transition:all .25s}
+.quality-card:hover{border-color:var(--green);box-shadow:0 0 20px rgba(63,185,80,0.08)}
+.quality-card .q-name{font-size:14px;font-weight:600;color:var(--green);margin-bottom:6px}
+.quality-card .q-desc{font-size:12px;color:var(--text-sec);line-height:1.5}
+
+/* Orchestration steps */
+.orch-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin:20px 0}
+.orch-card{background:var(--bg-light);border:1px solid var(--border);border-radius:8px;padding:16px;transition:all .25s}
+.orch-card:hover{border-color:var(--gold);box-shadow:0 0 20px rgba(210,153,34,0.08)}
+.orch-card .orch-name{font-size:14px;font-weight:600;color:var(--gold);margin-bottom:6px}
+.orch-card .orch-desc{font-size:12px;color:var(--text-sec);line-height:1.5}
+
+/* Monitoring items */
+.mon-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin:20px 0}
+.mon-card{background:var(--bg-light);border:1px solid var(--border);border-radius:8px;padding:16px;transition:all .25s}
+.mon-card:hover{border-color:var(--teal);box-shadow:0 0 20px rgba(57,210,192,0.08)}
+.mon-card .mon-name{font-size:14px;font-weight:600;color:var(--teal);margin-bottom:6px}
+.mon-card .mon-desc{font-size:12px;color:var(--text-sec);line-height:1.5}
+
+/* Code blocks */
+.code-block{background:var(--bg-light);border:1px solid var(--border);border-radius:8px;padding:16px 20px;margin:16px 0;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.7;color:var(--text-sec)}
+.code-block .comment{color:var(--text-dim)}
+.code-block .keyword{color:var(--purple)}
+.code-block .string{color:var(--green)}
+.code-block .function{color:var(--blue)}
+.code-block .accent{color:var(--accent)}
+
+/* Callout */
+.callout{background:var(--accent-dim);border:1px solid rgba(100,255,218,0.15);border-radius:8px;padding:16px 20px;margin:20px 0;font-size:13px;color:var(--text-sec);line-height:1.6}
+.callout strong{color:var(--accent)}
+.callout.warn{background:rgba(210,153,34,0.06);border-color:rgba(210,153,34,0.2)}
+.callout.warn strong{color:var(--gold)}
+
+/* Legacy merge-flow classes removed — replaced with inline SVGs */
+
+/* Sub-headers */
+.sub-title{font-size:15px;font-weight:700;color:var(--white);margin:28px 0 12px;letter-spacing:-0.2px}
+
+/* Tag / badge */
+.badge{display:inline-block;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600;margin-right:4px}
+.badge-green{background:rgba(63,185,80,0.12);color:var(--green)}
+.badge-gold{background:rgba(210,153,34,0.12);color:var(--gold)}
+.badge-red{background:rgba(248,81,73,0.12);color:var(--red)}
+.badge-blue{background:rgba(88,166,255,0.12);color:var(--blue)}
+
+/* Stat cards (ETL vs ELT) */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:24px 0}
+.stat-card{background:var(--bg-light);border:1px solid var(--border);border-radius:8px;padding:16px;text-align:center;transition:all .25s}
+.stat-card:hover{border-color:var(--text-dim)}
+.stat-card .s-label{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.stat-card .s-val{font-size:22px;font-weight:800;color:var(--white)}
+.stat-card .s-note{font-size:11px;color:var(--text-dim);margin-top:4px}
+.stat-card.highlight{border-color:rgba(100,255,218,0.3);background:var(--accent-dim)}
+.stat-card.highlight .s-val{color:var(--accent)}
+
+/* Contract table */
+.contract-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:20px 0}
+.contract-side{background:var(--bg-light);border:1px solid var(--border);border-radius:8px;padding:20px}
+.contract-side .cs-title{font-size:13px;font-weight:700;color:var(--white);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px}
+.contract-side .cs-items{list-style:none;padding:0}
+.contract-side .cs-items li{font-size:12px;color:var(--text-sec);padding:4px 0;padding-left:16px;position:relative}
+.contract-side .cs-items li::before{content:'';position:absolute;left:0;top:10px;width:6px;height:6px;border-radius:50%;background:var(--accent)}
+
+#spotlight{position:fixed;inset:0;z-index:0;pointer-events:none;transition:background .15s}
+.container,.top-bar{position:relative;z-index:1}
+.footer{text-align:center;padding:40px 24px;font-size:12px;color:var(--text-dim)}
+.footer a{color:var(--text-sec)}.footer a:hover{color:var(--accent)}
+
+@media(max-width:600px){
+  .top-bar nav{display:none}
+  /* SVG diagrams are responsive via viewBox — no mobile overrides needed */
+  .tool-grid{grid-template-columns:1fr}
+  .layer-grid{grid-template-columns:1fr}
+  .cdc-grid{grid-template-columns:1fr}
+  .quality-grid{grid-template-columns:1fr}
+  .orch-grid{grid-template-columns:1fr}
+  .mon-grid{grid-template-columns:1fr}
+  .stat-grid{grid-template-columns:repeat(2,1fr)}
+  .contract-grid{grid-template-columns:1fr}
+  .cmp-table{font-size:11px}
+  .cmp-table th,.cmp-table td{padding:8px 6px}
+}
+</style>
+</head>
+<body>
+<div id="spotlight"></div>
+
+<div class="top-bar">
+  <a href="../" class="back">&larr; anveshjarabani.com</a>
+  <nav>
+    <a href="#overview">Overview</a>
+    <a href="#layers">Layers</a>
+    <a href="#tools">Tools</a>
+    <a href="#cdc">CDC</a>
+    <a href="#quality">Quality</a>
+    <a href="#orchestration">Orchestration</a>
+    <a href="#monitoring">Monitoring</a>
+  </nav>
+</div>
+
+<div class="container">
+
+  <div class="fade-up">
+    <h1 class="hero-title">ETL Architecture: From Raw to Reporting</h1>
+    <p class="hero-sub">Modern data pipeline patterns, tool comparison, orchestration, and data quality</p>
+    <div class="hero-meta">
+      <span>Anvesh Jarabani</span>
+      <span>July 2026</span>
+      <span>14 min read</span>
+    </div>
+  </div>
+
+  <!-- ===================== OVERVIEW ===================== -->
+  <section id="overview">
+    <div class="section-title fade-up">Overview</div>
+
+    <p class="body fade-up">
+      The acronym <span class="hi">ETL</span> &mdash; Extract, Transform, Load &mdash; has described
+      data integration for decades. The traditional pattern was straightforward: pull data from source
+      systems, run transformations on a <span class="hi">dedicated middle-tier server</span> (often an
+      expensive appliance from Informatica or DataStage), and load the cleaned result into a warehouse.
+      The transformation layer was the bottleneck &mdash; compute-constrained, hard to scale, and owned
+      by a small team of ETL developers writing proprietary mappings.
+    </p>
+
+    <p class="body fade-up">
+      The cloud era flipped this on its head. When <span class="ac">BigQuery</span>,
+      <span class="ac">Snowflake</span>, and <span class="ac">Redshift</span> made warehouse compute
+      essentially elastic, the question became: why transform data <em>before</em> loading it? Storage
+      is cheap. Compute scales on demand. SQL is the lingua franca every analyst already knows.
+      The result: <span class="hi">ELT</span> &mdash; Extract, Load raw data into the warehouse,
+      Transform in-place using SQL.
+    </p>
+
+    <div class="stat-grid fade-up">
+      <div class="stat-card">
+        <div class="s-label">Traditional ETL</div>
+        <div class="s-val">Middle Tier</div>
+        <div class="s-note">Transform before load</div>
+      </div>
+      <div class="stat-card">
+        <div class="s-label">Modern ELT</div>
+        <div class="s-val">In-Warehouse</div>
+        <div class="s-note">Transform after load</div>
+      </div>
+      <div class="stat-card highlight">
+        <div class="s-label">Why ELT Won</div>
+        <div class="s-val">SQL-First</div>
+        <div class="s-note">Cheap storage + elastic compute</div>
+      </div>
+    </div>
+
+    <p class="body fade-up">
+      ELT won because it removed the most fragile part of the pipeline. No more Informatica server to
+      scale. No more proprietary transformation language. <span class="hi">The warehouse is the
+      transformation engine.</span> Tools like <span class="ac">dbt</span> and
+      <span class="ac">Dataform</span> formalized this &mdash; they compile SQL models into dependency
+      graphs, run assertions, manage incremental loads, and produce documentation. The transformation
+      code is version-controlled, testable, and written in the same SQL that analysts use to query the
+      final tables.
+    </p>
+
+    <p class="body fade-up">
+      This article walks through the architecture that emerges when you adopt ELT at scale:
+      <span class="hi">the layer model</span> that organizes transformations from raw to reporting,
+      the <span class="hi">tools</span> that orchestrate them, <span class="hi">CDC patterns</span>
+      for real-time ingestion, <span class="hi">quality gates</span> at every stage, and the
+      <span class="hi">observability</span> that keeps it all running.
+    </p>
+
+    <div class="callout fade-up">
+      <strong>Note:</strong> This article reflects patterns I use daily across BigQuery and SQL Server
+      environments. The principles are warehouse-agnostic, but code examples lean toward BigQuery SQL
+      and Dataform SQLX where specifics matter.
+    </div>
+  </section>
+
+  <!-- ===================== LAYERS ===================== -->
+  <section id="layers">
+    <div class="section-title fade-up">Layer Model</div>
+
+    <p class="body fade-up">
+      Every serious data platform has layers. You do not transform source data directly into a
+      dashboard view &mdash; that creates a brittle, untestable mess. Instead, data flows through
+      <span class="hi">progressive stages of refinement</span>, each with clear contracts about
+      what it contains and who owns it. The five-layer model below is the pattern I have seen
+      work across healthcare BI, SaaS analytics, and financial reporting.
+    </p>
+
+    <div class="fade-up" style="margin:24px 0;overflow-x:auto">
+      <svg viewBox="0 0 960 140" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:960px;display:block;margin:0 auto" font-family="'Inter',system-ui,sans-serif">
+        <defs>
+          <marker id="ah-layer" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#58a6ff"/></marker>
+        </defs>
+        <!-- Dashed container -->
+        <rect x="4" y="4" width="952" height="132" rx="12" fill="rgba(88,166,255,0.04)" stroke="rgba(88,166,255,0.15)" stroke-width="1.5" stroke-dasharray="8 4"/>
+        <text x="20" y="24" fill="#495670" font-size="10" font-weight="600" letter-spacing="1.5" text-transform="uppercase">DATA PIPELINE FLOW</text>
+        <!-- Card 1: Sources -->
+        <rect x="24" y="38" width="120" height="64" rx="10" fill="#161b22" stroke="rgba(248,81,73,0.4)" stroke-width="1.2"/>
+        <text x="84" y="62" fill="#f85149" font-size="12" font-weight="700" text-anchor="middle">📥 Sources</text>
+        <text x="84" y="80" fill="#495670" font-size="10" text-anchor="middle" font-family="'JetBrains Mono',monospace">EHR, APIs, Files</text>
+        <!-- Arrow 1 -->
+        <line x1="144" y1="70" x2="178" y2="70" stroke="#58a6ff" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-layer)"/>
+        <circle r="2.5" fill="#58a6ff" opacity="0.8"><animateMotion dur="1.8s" repeatCount="indefinite" path="M144,70 L178,70"/></circle>
+        <circle cx="161" cy="58" r="10" fill="#0a192f" stroke="#58a6ff" stroke-width="1.2"/><text x="161" y="62" fill="#58a6ff" font-size="9" font-weight="700" text-anchor="middle">1</text>
+        <!-- Card 2: Raw -->
+        <rect x="186" y="38" width="120" height="64" rx="10" fill="#161b22" stroke="rgba(248,81,73,0.4)" stroke-width="1.2"/>
+        <text x="246" y="62" fill="#f85149" font-size="12" font-weight="700" text-anchor="middle">📦 Raw</text>
+        <text x="246" y="80" fill="#495670" font-size="10" text-anchor="middle" font-family="'JetBrains Mono',monospace">Append-only</text>
+        <!-- Arrow 2 -->
+        <line x1="306" y1="70" x2="340" y2="70" stroke="#58a6ff" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-layer)"/>
+        <circle r="2.5" fill="#58a6ff" opacity="0.8"><animateMotion dur="1.8s" repeatCount="indefinite" path="M306,70 L340,70"/></circle>
+        <circle cx="323" cy="58" r="10" fill="#0a192f" stroke="#58a6ff" stroke-width="1.2"/><text x="323" y="62" fill="#58a6ff" font-size="9" font-weight="700" text-anchor="middle">2</text>
+        <!-- Card 3: Preprocessed -->
+        <rect x="348" y="38" width="120" height="64" rx="10" fill="#161b22" stroke="rgba(210,153,34,0.4)" stroke-width="1.2"/>
+        <text x="408" y="62" fill="#d29922" font-size="12" font-weight="700" text-anchor="middle">🧹 Preprocessed</text>
+        <text x="408" y="80" fill="#495670" font-size="10" text-anchor="middle" font-family="'JetBrains Mono',monospace">Cleaned</text>
+        <!-- Arrow 3 -->
+        <line x1="468" y1="70" x2="502" y2="70" stroke="#58a6ff" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-layer)"/>
+        <circle r="2.5" fill="#58a6ff" opacity="0.8"><animateMotion dur="1.8s" repeatCount="indefinite" path="M468,70 L502,70"/></circle>
+        <circle cx="485" cy="58" r="10" fill="#0a192f" stroke="#58a6ff" stroke-width="1.2"/><text x="485" y="62" fill="#58a6ff" font-size="9" font-weight="700" text-anchor="middle">3</text>
+        <!-- Card 4: Processed -->
+        <rect x="510" y="38" width="120" height="64" rx="10" fill="#161b22" stroke="rgba(88,166,255,0.4)" stroke-width="1.2"/>
+        <text x="570" y="62" fill="#58a6ff" font-size="12" font-weight="700" text-anchor="middle">⚙️ Processed</text>
+        <text x="570" y="80" fill="#495670" font-size="10" text-anchor="middle" font-family="'JetBrains Mono',monospace">Business logic</text>
+        <!-- Arrow 4 -->
+        <line x1="630" y1="70" x2="664" y2="70" stroke="#58a6ff" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-layer)"/>
+        <circle r="2.5" fill="#58a6ff" opacity="0.8"><animateMotion dur="1.8s" repeatCount="indefinite" path="M630,70 L664,70"/></circle>
+        <circle cx="647" cy="58" r="10" fill="#0a192f" stroke="#58a6ff" stroke-width="1.2"/><text x="647" y="62" fill="#58a6ff" font-size="9" font-weight="700" text-anchor="middle">4</text>
+        <!-- Card 5: Curated -->
+        <rect x="672" y="38" width="120" height="64" rx="10" fill="#161b22" stroke="rgba(188,140,255,0.4)" stroke-width="1.2"/>
+        <text x="732" y="62" fill="#bc8cff" font-size="12" font-weight="700" text-anchor="middle">🎯 Curated</text>
+        <text x="732" y="80" fill="#495670" font-size="10" text-anchor="middle" font-family="'JetBrains Mono',monospace">Semantic layer</text>
+        <!-- Arrow 5 -->
+        <line x1="792" y1="70" x2="826" y2="70" stroke="#58a6ff" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-layer)"/>
+        <circle r="2.5" fill="#58a6ff" opacity="0.8"><animateMotion dur="1.8s" repeatCount="indefinite" path="M792,70 L826,70"/></circle>
+        <circle cx="809" cy="58" r="10" fill="#0a192f" stroke="#58a6ff" stroke-width="1.2"/><text x="809" y="62" fill="#58a6ff" font-size="9" font-weight="700" text-anchor="middle">5</text>
+        <!-- Card 6: Reporting -->
+        <rect x="834" y="38" width="108" height="64" rx="10" fill="#161b22" stroke="rgba(63,185,80,0.4)" stroke-width="1.2"/>
+        <text x="888" y="62" fill="#3fb950" font-size="12" font-weight="700" text-anchor="middle">📊 Reporting</text>
+        <text x="888" y="80" fill="#495670" font-size="10" text-anchor="middle" font-family="'JetBrains Mono',monospace">Dashboards</text>
+      </svg>
+    </div>
+
+    <div class="layer-grid fade-up">
+      <div class="layer-card">
+        <div class="layer-num" style="color:var(--red)">Layer 1</div>
+        <div class="layer-name">Raw / Staging</div>
+        <div class="layer-desc">
+          Exact replica of the source system. No transforms, no renaming, no deduplication.
+          Append-only with ingestion timestamps and source metadata.
+        </div>
+        <div class="layer-detail">
+          Schema mirrors source &bull; Partitioned by ingestion date &bull; Never modified after write &bull;
+          Full audit trail
+        </div>
+      </div>
+      <div class="layer-card">
+        <div class="layer-num" style="color:var(--gold)">Layer 2</div>
+        <div class="layer-name">Preprocessed / Staged</div>
+        <div class="layer-desc">
+          Light cleaning only. Type casting, null standardization, deduplication, column renaming to
+          snake_case. No business logic.
+        </div>
+        <div class="layer-detail">
+          Consistent types &bull; Deduplicated by PK &bull; Standardized nulls &bull;
+          <code>_loaded_at</code> column added
+        </div>
+      </div>
+      <div class="layer-card">
+        <div class="layer-num" style="color:var(--blue)">Layer 3</div>
+        <div class="layer-name">Processed / Conformed</div>
+        <div class="layer-desc">
+          Business logic lives here. Facts and dimensions, surrogate keys, incremental models,
+          cross-source joins, business date calculations.
+        </div>
+        <div class="layer-detail">
+          Star schema &bull; Surrogate keys &bull; Incremental <code>MERGE</code> &bull;
+          Business rules documented &bull; SCD Type 2 for dimensions
+        </div>
+      </div>
+      <div class="layer-card">
+        <div class="layer-num" style="color:var(--purple)">Layer 4</div>
+        <div class="layer-name">Curated</div>
+        <div class="layer-desc">
+          Semantic layer models, pre-aggregated metrics, feature tables for ML, and
+          cross-domain summary tables.
+        </div>
+        <div class="layer-detail">
+          Pre-aggregations &bull; Metric definitions &bull; Feature store tables &bull;
+          Owned by domain teams
+        </div>
+      </div>
+      <div class="layer-card">
+        <div class="layer-num" style="color:var(--accent)">Layer 5</div>
+        <div class="layer-name">Reporting</div>
+        <div class="layer-desc">
+          Final views optimized for consumption. Dashboard-specific views, API export tables,
+          file extracts, and embedded analytics feeds.
+        </div>
+        <div class="layer-detail">
+          Granted to BI tools &bull; Optimized for read &bull; Materialized on schedule &bull;
+          Stable column contracts
+        </div>
+      </div>
+    </div>
+
+    <div class="code-block fade-up">
+<span class="comment">-- Example: Dataform SQLX incremental model (Layer 3)</span>
+<span class="keyword">config</span> {
+  type: <span class="string">"incremental"</span>,
+  schema: <span class="string">"processed"</span>,
+  uniqueKey: [<span class="string">"visit_id"</span>],
+  bigquery: { partitionBy: <span class="string">"DATE(visit_date)"</span> }
+}
+
+<span class="keyword">SELECT</span>
+  v.visit_id,
+  v.patient_id,
+  p.patient_name,
+  v.visit_date,
+  v.clinician_id,
+  <span class="function">COALESCE</span>(v.duration_minutes, 0) <span class="keyword">AS</span> duration_minutes,
+  <span class="function">CURRENT_TIMESTAMP</span>() <span class="keyword">AS</span> _processed_at
+<span class="keyword">FROM</span> ${<span class="accent">ref</span>(<span class="string">"preprocessed"</span>, <span class="string">"stg_visits"</span>)} v
+<span class="keyword">LEFT JOIN</span> ${<span class="accent">ref</span>(<span class="string">"preprocessed"</span>, <span class="string">"stg_patients"</span>)} p
+  <span class="keyword">ON</span> v.patient_id = p.patient_id
+<span class="keyword">WHERE</span> v._loaded_at > <span class="function">COALESCE</span>(
+  (<span class="keyword">SELECT</span> <span class="function">MAX</span>(_processed_at) <span class="keyword">FROM</span> ${<span class="accent">self</span>()}),
+  <span class="string">'1900-01-01'</span>
+)
+    </div>
+
+    <div class="callout fade-up">
+      <strong>Key principle:</strong> Each layer should be independently testable and re-runnable.
+      If you can drop and rebuild Layer 3 from Layer 2 without data loss, your architecture is sound.
+      If you cannot, you have hidden state that will eventually cause an outage.
+    </div>
+  </section>
+
+  <!-- ===================== TOOLS ===================== -->
+  <section id="tools">
+    <div class="section-title fade-up">Tools</div>
+
+    <p class="body fade-up">
+      The modern ELT landscape has consolidated around a few categories: <span class="hi">transformation
+      frameworks</span> (dbt, Dataform) that compile SQL into dependency graphs, <span class="hi">orchestrators</span>
+      (Airflow, Dagster, Argo) that schedule and monitor execution, and <span class="hi">ingestion tools</span>
+      (Fivetran, Airbyte, Datastream) that handle the E and L. Here is how the major players compare.
+    </p>
+
+    <div class="tool-grid fade-up">
+      <div class="tool-card">
+        <div class="tool-name">Dataform</div>
+        <div class="tool-desc">
+          Google Cloud native. Uses <span class="hi">SQLX</span> &mdash; SQL with a thin JavaScript
+          wrapper for <code>ref()</code>, <code>config {}</code>, and assertions. First-class BigQuery
+          integration, dependency graphs, incremental models, and built-in scheduling via
+          BigQuery Studio. No infrastructure to manage.
+        </div>
+        <div class="tool-tags">
+          <span class="tool-tag">SQLX</span>
+          <span class="tool-tag">BigQuery-native</span>
+          <span class="tool-tag">Managed</span>
+          <span class="tool-tag">Free tier</span>
+        </div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">dbt</div>
+        <div class="tool-desc">
+          The industry standard. <span class="hi">Jinja + SQL</span> templating, database-agnostic
+          (Snowflake, BigQuery, Redshift, Postgres, Databricks). Massive ecosystem of packages, testing
+          framework, documentation generation. Available as dbt Core (open source) or dbt Cloud (managed).
+        </div>
+        <div class="tool-tags">
+          <span class="tool-tag">Jinja+SQL</span>
+          <span class="tool-tag">Multi-warehouse</span>
+          <span class="tool-tag">Huge ecosystem</span>
+          <span class="tool-tag">Open source</span>
+        </div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">Apache Airflow</div>
+        <div class="tool-desc">
+          The veteran <span class="hi">orchestrator</span>, not a transformer. DAGs defined in Python,
+          complex scheduling, retries, SLA monitoring. Excellent for heterogeneous pipelines
+          (Spark + SQL + Python + API calls). Available managed via Cloud Composer, MWAA, or Astronomer.
+        </div>
+        <div class="tool-tags">
+          <span class="tool-tag">Python DAGs</span>
+          <span class="tool-tag">Orchestrator</span>
+          <span class="tool-tag">Mature</span>
+          <span class="tool-tag">Complex</span>
+        </div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">Argo Workflows</div>
+        <div class="tool-desc">
+          <span class="hi">Kubernetes-native</span> workflow engine. Each step runs in its own container,
+          so you can mix Spark jobs, Python scripts, and SQL runners in one DAG. Well-suited for
+          ML pipelines and environments already running on K8s.
+        </div>
+        <div class="tool-tags">
+          <span class="tool-tag">K8s-native</span>
+          <span class="tool-tag">Container-per-step</span>
+          <span class="tool-tag">YAML</span>
+          <span class="tool-tag">Mixed workloads</span>
+        </div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">Dagster</div>
+        <div class="tool-desc">
+          The newcomer redefining orchestration around <span class="hi">software-defined assets</span>.
+          Type checking, built-in data lineage, observability UI, and first-class support for
+          partitioned assets. Better developer experience than Airflow for greenfield projects.
+        </div>
+        <div class="tool-tags">
+          <span class="tool-tag">Asset-based</span>
+          <span class="tool-tag">Type-safe</span>
+          <span class="tool-tag">Observability</span>
+          <span class="tool-tag">Python</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="sub-title fade-up">Comparison Matrix</div>
+
+    <div style="overflow-x:auto" class="fade-up">
+    <table class="cmp-table">
+      <thead>
+        <tr>
+          <th>Tool</th>
+          <th>Language</th>
+          <th>Cloud-Native</th>
+          <th>Orchestration</th>
+          <th>Testing</th>
+          <th>Learning Curve</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="hi">Dataform</span></td>
+          <td>SQLX (JS)</td>
+          <td><span class="check">GCP</span></td>
+          <td><span class="partial">Basic (cron)</span></td>
+          <td><span class="check">Assertions</span></td>
+          <td><span class="badge badge-green">Low</span></td>
+        </tr>
+        <tr>
+          <td><span class="hi">dbt</span></td>
+          <td>Jinja+SQL</td>
+          <td><span class="check">Multi-cloud</span></td>
+          <td><span class="partial">Via dbt Cloud</span></td>
+          <td><span class="check">Rich</span></td>
+          <td><span class="badge badge-green">Low</span></td>
+        </tr>
+        <tr>
+          <td><span class="hi">Airflow</span></td>
+          <td>Python</td>
+          <td><span class="check">GCP / AWS / Azure</span></td>
+          <td><span class="check">Full DAGs</span></td>
+          <td><span class="partial">Manual</span></td>
+          <td><span class="badge badge-gold">Medium</span></td>
+        </tr>
+        <tr>
+          <td><span class="hi">Argo</span></td>
+          <td>YAML</td>
+          <td><span class="check">K8s</span></td>
+          <td><span class="check">Full DAGs</span></td>
+          <td><span class="partial">Manual</span></td>
+          <td><span class="badge badge-red">High</span></td>
+        </tr>
+        <tr>
+          <td><span class="hi">Dagster</span></td>
+          <td>Python</td>
+          <td><span class="check">Dagster Cloud</span></td>
+          <td><span class="check">Asset-based</span></td>
+          <td><span class="check">Built-in</span></td>
+          <td><span class="badge badge-gold">Medium</span></td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+
+    <div class="callout fade-up">
+      <strong>My take:</strong> For BigQuery shops, Dataform is the right default &mdash; zero
+      infrastructure, native integration, and the SQLX syntax is cleaner than Jinja. If you need
+      multi-warehouse support or want the ecosystem, dbt Core is the obvious choice. Use Airflow or
+      Dagster when your pipeline includes non-SQL steps (Python transforms, API calls, ML training).
+    </div>
+  </section>
+
+  <!-- ===================== CDC ===================== -->
+  <section id="cdc">
+    <div class="section-title fade-up">Change Data Capture</div>
+
+    <p class="body fade-up">
+      Getting data <em>into</em> the warehouse is half the problem. <span class="hi">Change Data Capture
+      (CDC)</span> is the set of patterns for detecting and propagating changes from source systems
+      without full table scans on every run. The choice of CDC strategy determines your latency floor,
+      source system impact, and operational complexity.
+    </p>
+
+    <div class="cdc-grid fade-up">
+      <div class="cdc-card">
+        <div class="cdc-name">Log-Based CDC</div>
+        <div class="cdc-desc">
+          Reads the database transaction log (binlog, WAL, redo log) to capture every INSERT, UPDATE,
+          and DELETE. <span class="hi">Near-zero source impact</span>, sub-minute latency, captures
+          deletes naturally.
+        </div>
+        <div class="cdc-tools">Datastream, Debezium, HVR, Fivetran HVA</div>
+      </div>
+      <div class="cdc-card">
+        <div class="cdc-name">Query-Based CDC</div>
+        <div class="cdc-desc">
+          Polls source tables for rows where <code>updated_at &gt; last_sync</code>. Simple to
+          implement, but <span class="hi">misses deletes</span> and adds query load to the source.
+        </div>
+        <div class="cdc-tools">Custom SQL, Airbyte incremental, Fivetran standard</div>
+      </div>
+      <div class="cdc-card">
+        <div class="cdc-name">Trigger-Based CDC</div>
+        <div class="cdc-desc">
+          Database triggers write change records to a shadow table on every DML operation. Captures
+          everything, but <span class="hi">adds write overhead</span> and couples CDC to the source schema.
+        </div>
+        <div class="cdc-tools">SQL Server CDC, custom triggers, audit tables</div>
+      </div>
+      <div class="cdc-card">
+        <div class="cdc-name">Full Load</div>
+        <div class="cdc-desc">
+          Dump the entire table on every sync. <span class="hi">Simplest to implement</span>, appropriate
+          for small reference tables or when source systems provide no change tracking.
+        </div>
+        <div class="cdc-tools">Any connector, pg_dump, BCP, EXPORT DATA</div>
+      </div>
+    </div>
+
+    <div class="sub-title fade-up">When to Use Each Pattern</div>
+
+    <div style="overflow-x:auto" class="fade-up">
+    <table class="cmp-table">
+      <thead>
+        <tr>
+          <th>Pattern</th>
+          <th>Latency</th>
+          <th>Captures Deletes</th>
+          <th>Source Impact</th>
+          <th>Complexity</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Log-based</td>
+          <td><span class="check">Seconds</span></td>
+          <td><span class="check">Yes</span></td>
+          <td><span class="check">Minimal</span></td>
+          <td><span class="badge badge-gold">Medium</span></td>
+        </tr>
+        <tr>
+          <td>Query-based</td>
+          <td><span class="partial">Minutes-Hours</span></td>
+          <td><span class="miss">No</span></td>
+          <td><span class="partial">Moderate</span></td>
+          <td><span class="badge badge-green">Low</span></td>
+        </tr>
+        <tr>
+          <td>Trigger-based</td>
+          <td><span class="check">Immediate</span></td>
+          <td><span class="check">Yes</span></td>
+          <td><span class="miss">High</span></td>
+          <td><span class="badge badge-red">High</span></td>
+        </tr>
+        <tr>
+          <td>Full load</td>
+          <td><span class="miss">Schedule-bound</span></td>
+          <td><span class="check">Yes (by diff)</span></td>
+          <td><span class="miss">High</span></td>
+          <td><span class="badge badge-green">Low</span></td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+
+    <div class="sub-title fade-up">Merge Patterns</div>
+
+    <p class="body fade-up">
+      Once CDC data lands in the raw layer, you need a strategy for applying changes to the processed
+      tables. The three common approaches:
+    </p>
+
+    <div class="fade-up" style="margin:24px 0;overflow-x:auto">
+      <svg viewBox="0 0 560 320" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:560px;display:block;margin:0 auto" font-family="'Inter',system-ui,sans-serif">
+        <defs>
+          <marker id="ah-merge" viewBox="0 0 8 8" refX="4" refY="8" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L4,8 L8,0" fill="#bc8cff"/></marker>
+        </defs>
+        <!-- Dashed container -->
+        <rect x="4" y="4" width="552" height="312" rx="12" fill="rgba(188,140,255,0.04)" stroke="rgba(188,140,255,0.15)" stroke-width="1.5" stroke-dasharray="8 4"/>
+        <text x="20" y="24" fill="#495670" font-size="10" font-weight="600" letter-spacing="1.5">MERGE PATTERNS</text>
+        <!-- Card 1: MERGE INTO -->
+        <rect x="80" y="38" width="400" height="64" rx="10" fill="#161b22" stroke="rgba(63,185,80,0.4)" stroke-width="1.2"/>
+        <text x="280" y="62" fill="#3fb950" font-size="13" font-weight="700" text-anchor="middle">🔀 MERGE INTO (Upsert)</text>
+        <text x="280" y="80" fill="#495670" font-size="11" text-anchor="middle">Match on PK, update if exists, insert if new</text>
+        <!-- Arrow 1-2 -->
+        <path id="merge-p1" d="M280,102 L280,138" fill="none" stroke="#bc8cff" stroke-width="1.5" stroke-dasharray="5 3"/>
+        <circle cx="280" cy="120" r="10" fill="#0a192f" stroke="#bc8cff" stroke-width="1.2"/><text x="280" y="124" fill="#bc8cff" font-size="9" font-weight="700" text-anchor="middle">1</text>
+        <circle r="2.5" fill="#bc8cff" opacity="0.8"><animateMotion dur="1.5s" repeatCount="indefinite"><mpath href="#merge-p1"/></animateMotion></circle>
+        <!-- Card 2: SCD Type 2 -->
+        <rect x="80" y="142" width="400" height="64" rx="10" fill="#161b22" stroke="rgba(210,153,34,0.4)" stroke-width="1.2"/>
+        <text x="280" y="166" fill="#d29922" font-size="13" font-weight="700" text-anchor="middle">📜 SCD Type 2 (History)</text>
+        <text x="280" y="184" fill="#495670" font-size="11" text-anchor="middle">Close current row, insert new version. Full change history.</text>
+        <!-- Arrow 2-3 -->
+        <path id="merge-p2" d="M280,206 L280,242" fill="none" stroke="#bc8cff" stroke-width="1.5" stroke-dasharray="5 3"/>
+        <circle cx="280" cy="224" r="10" fill="#0a192f" stroke="#bc8cff" stroke-width="1.2"/><text x="280" y="228" fill="#bc8cff" font-size="9" font-weight="700" text-anchor="middle">2</text>
+        <circle r="2.5" fill="#bc8cff" opacity="0.8"><animateMotion dur="1.5s" repeatCount="indefinite"><mpath href="#merge-p2"/></animateMotion></circle>
+        <!-- Card 3: Append + Dedup -->
+        <rect x="80" y="246" width="400" height="64" rx="10" fill="#161b22" stroke="rgba(88,166,255,0.4)" stroke-width="1.2"/>
+        <text x="280" y="270" fill="#58a6ff" font-size="13" font-weight="700" text-anchor="middle">📋 Append + Deduplicate</text>
+        <text x="280" y="288" fill="#495670" font-size="11" text-anchor="middle">Append all changes, deduplicate at query time via ROW_NUMBER()</text>
+      </svg>
+    </div>
+
+    <div class="code-block fade-up">
+<span class="comment">-- BigQuery MERGE for upsert pattern</span>
+<span class="keyword">MERGE INTO</span> processed.dim_clinicians <span class="keyword">AS</span> target
+<span class="keyword">USING</span> preprocessed.stg_clinicians <span class="keyword">AS</span> source
+  <span class="keyword">ON</span> target.clinician_id = source.clinician_id
+<span class="keyword">WHEN MATCHED AND</span> source._loaded_at > target._processed_at <span class="keyword">THEN</span>
+  <span class="keyword">UPDATE SET</span>
+    target.clinician_name = source.clinician_name,
+    target.license_type = source.license_type,
+    target.status = source.status,
+    target._processed_at = <span class="function">CURRENT_TIMESTAMP</span>()
+<span class="keyword">WHEN NOT MATCHED THEN</span>
+  <span class="keyword">INSERT</span> (clinician_id, clinician_name, license_type, status, _processed_at)
+  <span class="keyword">VALUES</span> (source.clinician_id, source.clinician_name, source.license_type,
+         source.status, <span class="function">CURRENT_TIMESTAMP</span>())
+    </div>
+
+    <div class="callout warn fade-up">
+      <strong>Watch out:</strong> <code>MERGE</code> in BigQuery has a
+      limitation &mdash; the source and target cannot have more than one match per key. If your CDC
+      stream delivers multiple updates for the same row in one batch, you must deduplicate the source
+      CTE first (keep the latest by <code>_cdc_timestamp</code>).
+    </div>
+  </section>
+
+  <!-- ===================== QUALITY ===================== -->
+  <section id="quality">
+    <div class="section-title fade-up">Data Quality</div>
+
+    <p class="body fade-up">
+      Data quality is not a phase you bolt on at the end. It is <span class="hi">infrastructure that
+      runs at every layer</span>, blocking bad data from propagating downstream. A test that catches
+      a duplicate at Layer 2 saves hours of debugging a wrong dashboard number at Layer 5.
+    </p>
+
+    <div class="quality-grid fade-up">
+      <div class="quality-card">
+        <div class="q-name">Schema Tests</div>
+        <div class="q-desc">
+          Not null, unique, accepted values, referential integrity. These are table stakes &mdash;
+          every column in every model should have at least <code>not_null</code> and
+          <code>unique</code> where appropriate.
+        </div>
+      </div>
+      <div class="quality-card">
+        <div class="q-name">Freshness Monitoring</div>
+        <div class="q-desc">
+          SLA-based alerts when data is stale. "This table should have rows from the last 2 hours."
+          If it does not, block downstream models and alert the on-call.
+        </div>
+      </div>
+      <div class="quality-card">
+        <div class="q-name">Volume Anomalies</div>
+        <div class="q-desc">
+          Row count deviation detection. If today's load is 50% smaller than the 7-day average,
+          something is wrong upstream. Catch it before it becomes a missing-data ticket.
+        </div>
+      </div>
+      <div class="quality-card">
+        <div class="q-name">Business Assertions</div>
+        <div class="q-desc">
+          Custom rules: "revenue should never be negative," "visit duration must be between 1 and
+          480 minutes," "every patient must have a primary clinician." Domain-specific, high-value.
+        </div>
+      </div>
+      <div class="quality-card">
+        <div class="q-name">Distribution Checks</div>
+        <div class="q-desc">
+          Statistical tests on column distributions. Z-score on averages, cardinality drift,
+          null-rate spikes. Catches subtle upstream schema changes before they break reports.
+        </div>
+      </div>
+      <div class="quality-card">
+        <div class="q-name">Cross-Source Reconciliation</div>
+        <div class="q-desc">
+          Compare totals between source and warehouse. "Billing system says 1,247 claims;
+          warehouse has 1,245. Investigate the 2 missing." Critical for financial reporting.
+        </div>
+      </div>
+    </div>
+
+    <div class="sub-title fade-up">Quality Tools Landscape</div>
+
+    <div style="overflow-x:auto" class="fade-up">
+    <table class="cmp-table">
+      <thead>
+        <tr>
+          <th>Tool</th>
+          <th>Integration</th>
+          <th>Test Types</th>
+          <th>Alerting</th>
+          <th>Best For</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="hi">dbt tests</span></td>
+          <td>Built into dbt</td>
+          <td>Schema + custom SQL</td>
+          <td>Via orchestrator</td>
+          <td>dbt shops, inline testing</td>
+        </tr>
+        <tr>
+          <td><span class="hi">Dataform assertions</span></td>
+          <td>Built into Dataform</td>
+          <td>SQL assertions</td>
+          <td>Cloud Monitoring</td>
+          <td>BigQuery + Dataform</td>
+        </tr>
+        <tr>
+          <td><span class="hi">Great Expectations</span></td>
+          <td>Python, any DB</td>
+          <td>300+ built-in</td>
+          <td>Flexible</td>
+          <td>Complex validation suites</td>
+        </tr>
+        <tr>
+          <td><span class="hi">Soda</span></td>
+          <td>YAML config</td>
+          <td>Schema + anomaly</td>
+          <td>Soda Cloud</td>
+          <td>Non-engineer friendly</td>
+        </tr>
+        <tr>
+          <td><span class="hi">Elementary</span></td>
+          <td>dbt package</td>
+          <td>Anomaly detection</td>
+          <td>Slack / email</td>
+          <td>dbt + anomaly detection</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+
+    <div class="sub-title fade-up">Data Contracts</div>
+
+    <p class="body fade-up">
+      Data contracts formalize the <span class="hi">agreement between producers and consumers</span>.
+      The source team commits to a schema, SLA, and quality bar. The consuming team builds against
+      that contract. When either side wants to change it, there is a negotiation &mdash; not a surprise
+      breakage at 2am.
+    </p>
+
+    <div class="contract-grid fade-up">
+      <div class="contract-side">
+        <div class="cs-title" style="color:var(--blue)">Producer Commits</div>
+        <ul class="cs-items">
+          <li>Schema (columns, types, not-null constraints)</li>
+          <li>Freshness SLA (data available by 06:00 UTC)</li>
+          <li>Volume expectations (10K-50K rows/day)</li>
+          <li>Breaking change notification (7 days minimum)</li>
+          <li>Semantic versioning on schema changes</li>
+        </ul>
+      </div>
+      <div class="contract-side">
+        <div class="cs-title" style="color:var(--purple)">Consumer Expectations</div>
+        <ul class="cs-items">
+          <li>Only reference contracted columns</li>
+          <li>Handle late-arriving data gracefully</li>
+          <li>Validate at ingestion boundary</li>
+          <li>Report contract violations promptly</li>
+          <li>Pin to contract version, upgrade explicitly</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="code-block fade-up">
+<span class="comment">-- Dataform assertion: data freshness check</span>
+<span class="keyword">config</span> {
+  type: <span class="string">"assertion"</span>,
+  schema: <span class="string">"assertions"</span>,
+  description: <span class="string">"Visits table should have data from the last 3 hours"</span>
+}
+
+<span class="keyword">SELECT</span> <span class="function">COUNT</span>(*) <span class="keyword">AS</span> row_count
+<span class="keyword">FROM</span> ${<span class="accent">ref</span>(<span class="string">"preprocessed"</span>, <span class="string">"stg_visits"</span>)}
+<span class="keyword">WHERE</span> _loaded_at >= <span class="function">TIMESTAMP_SUB</span>(<span class="function">CURRENT_TIMESTAMP</span>(), <span class="keyword">INTERVAL</span> 3 <span class="keyword">HOUR</span>)
+<span class="keyword">HAVING</span> row_count = 0
+<span class="comment">-- Assertion passes when this returns 0 rows (data IS fresh)</span>
+<span class="comment">-- Fails when it returns a row (no recent data found)</span>
+    </div>
+
+    <div class="callout fade-up">
+      <strong>Rule of thumb:</strong> Every model should have at least one schema test and one
+      business assertion. If you have 200 models and 50 tests, you are under-tested. Aim for a
+      2:1 ratio of tests to models at minimum.
+    </div>
+  </section>
+
+  <!-- ===================== ORCHESTRATION ===================== -->
+  <section id="orchestration">
+    <div class="section-title fade-up">Orchestration</div>
+
+    <p class="body fade-up">
+      Orchestration is the <span class="hi">glue</span> that turns individual transformation models
+      into a reliable, repeatable pipeline. It answers: <em>what runs when, in what order, and what
+      happens when it fails?</em> The choice between time-based and event-driven scheduling has
+      downstream implications for latency, cost, and operational complexity.
+    </p>
+
+    <div class="orch-grid fade-up">
+      <div class="orch-card">
+        <div class="orch-name">Time-Based Scheduling</div>
+        <div class="orch-desc">
+          Classic cron: run the pipeline every hour, every 15 minutes, or at 04:00 UTC daily. Simple,
+          predictable, but wastes compute when there is no new data. Use Cloud Scheduler, Airflow
+          schedules, or Dataform cron.
+        </div>
+      </div>
+      <div class="orch-card">
+        <div class="orch-name">Event-Driven Triggers</div>
+        <div class="orch-desc">
+          Pipeline fires when data arrives: a Pub/Sub message, a GCS file upload, a webhook from the
+          source system. Lower latency, no wasted runs, but harder to reason about ordering and
+          requires idempotent transforms.
+        </div>
+      </div>
+      <div class="orch-card">
+        <div class="orch-name">Dependency Graphs (DAGs)</div>
+        <div class="orch-desc">
+          Directed Acyclic Graphs define execution order: model B depends on A, model C depends on
+          A and B. The orchestrator resolves the graph and runs tasks in the correct order, parallelizing
+          where possible.
+        </div>
+      </div>
+      <div class="orch-card">
+        <div class="orch-name">Backfill Patterns</div>
+        <div class="orch-desc">
+          Reprocessing historical data safely. Partition-aware backfills overwrite specific date ranges
+          without affecting current data. Critical after schema changes, bug fixes, or new source
+          integration.
+        </div>
+      </div>
+      <div class="orch-card">
+        <div class="orch-name">Retry &amp; Alerting</div>
+        <div class="orch-desc">
+          Transient failures (network timeouts, slot contention) should retry with exponential backoff.
+          Persistent failures alert to Slack or PagerDuty. Distinguish between "retry" (transient)
+          and "fail-and-alert" (logic error) failures.
+        </div>
+      </div>
+      <div class="orch-card">
+        <div class="orch-name">Idempotency</div>
+        <div class="orch-desc">
+          Every pipeline step must be <span class="hi">safe to re-run</span> without creating
+          duplicates. Use <code>MERGE</code> instead of <code>INSERT</code>, partition-overwrite
+          instead of append, and deterministic surrogate keys.
+        </div>
+      </div>
+    </div>
+
+    <div class="sub-title fade-up">Scheduling Strategy Decision Tree</div>
+
+    <div class="fade-up" style="margin:24px 0;overflow-x:auto">
+      <svg viewBox="0 0 700 420" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:700px;display:block;margin:0 auto" font-family="'Inter',system-ui,sans-serif">
+        <defs>
+          <marker id="ah-sched" viewBox="0 0 8 8" refX="4" refY="8" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L4,8 L8,0" fill="#d29922"/></marker>
+          <marker id="ah-sched-r" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#d29922"/></marker>
+        </defs>
+        <!-- Dashed container -->
+        <rect x="4" y="4" width="692" height="412" rx="12" fill="rgba(210,153,34,0.04)" stroke="rgba(210,153,34,0.15)" stroke-width="1.5" stroke-dasharray="8 4"/>
+        <text x="20" y="24" fill="#495670" font-size="10" font-weight="600" letter-spacing="1.5">SCHEDULING DECISION TREE</text>
+
+        <!-- Node 1: Event-driven? -->
+        <rect x="200" y="38" width="300" height="56" rx="10" fill="#161b22" stroke="rgba(210,153,34,0.4)" stroke-width="1.2"/>
+        <text x="350" y="62" fill="#d29922" font-size="13" font-weight="700" text-anchor="middle">🤔 Is the source event-driven?</text>
+        <text x="350" y="78" fill="#495670" font-size="10" text-anchor="middle">Webhooks, message queues, file drops</text>
+
+        <!-- Branch: YES (left) -->
+        <path id="sched-yes" d="M280,94 C280,120 180,120 180,146" fill="none" stroke="#3fb950" stroke-width="1.5" stroke-dasharray="5 3"/>
+        <circle r="2.5" fill="#3fb950" opacity="0.8"><animateMotion dur="2s" repeatCount="indefinite"><mpath href="#sched-yes"/></animateMotion></circle>
+        <text x="218" y="118" fill="#3fb950" font-size="10" font-weight="700">YES</text>
+
+        <!-- Node 2: Event-triggered -->
+        <rect x="50" y="146" width="260" height="56" rx="10" fill="#161b22" stroke="rgba(63,185,80,0.4)" stroke-width="1.2"/>
+        <text x="180" y="168" fill="#3fb950" font-size="12" font-weight="700" text-anchor="middle">⚡ Event-triggered pipeline</text>
+        <text x="180" y="184" fill="#495670" font-size="10" text-anchor="middle" font-family="'JetBrains Mono',monospace">Pub/Sub → Function → dbt run</text>
+
+        <!-- Branch: NO (right) -->
+        <path id="sched-no" d="M420,94 C420,120 520,120 520,146" fill="none" stroke="#f85149" stroke-width="1.5" stroke-dasharray="5 3"/>
+        <circle r="2.5" fill="#f85149" opacity="0.8"><animateMotion dur="2s" repeatCount="indefinite"><mpath href="#sched-no"/></animateMotion></circle>
+        <text x="468" y="118" fill="#f85149" font-size="10" font-weight="700">NO</text>
+
+        <!-- Node 3: Freshness SLA? -->
+        <rect x="370" y="146" width="300" height="56" rx="10" fill="#161b22" stroke="rgba(210,153,34,0.4)" stroke-width="1.2"/>
+        <text x="520" y="168" fill="#d29922" font-size="12" font-weight="700" text-anchor="middle">⏱️ What is the freshness SLA?</text>
+        <text x="520" y="184" fill="#495670" font-size="10" text-anchor="middle">How soon must data be available?</text>
+
+        <!-- Branch: < 5 min (left) -->
+        <path id="sched-fast" d="M450,202 C450,228 350,228 350,254" fill="none" stroke="#39d2c0" stroke-width="1.5" stroke-dasharray="5 3"/>
+        <circle r="2.5" fill="#39d2c0" opacity="0.8"><animateMotion dur="2s" repeatCount="indefinite"><mpath href="#sched-fast"/></animateMotion></circle>
+        <text x="380" y="228" fill="#39d2c0" font-size="10" font-weight="700">&lt; 5 min</text>
+
+        <!-- Node 4: Streaming -->
+        <rect x="200" y="254" width="300" height="56" rx="10" fill="#161b22" stroke="rgba(57,210,192,0.4)" stroke-width="1.2"/>
+        <text x="350" y="276" fill="#39d2c0" font-size="12" font-weight="700" text-anchor="middle">🌊 Streaming + Scheduled Transforms</text>
+        <text x="350" y="292" fill="#495670" font-size="10" text-anchor="middle" font-family="'JetBrains Mono',monospace">CDC → raw, transforms every 5-15 min</text>
+
+        <!-- Branch: > 5 min (right) -->
+        <path id="sched-slow" d="M590,202 C590,228 590,300 590,340" fill="none" stroke="#58a6ff" stroke-width="1.5" stroke-dasharray="5 3"/>
+        <circle r="2.5" fill="#58a6ff" opacity="0.8"><animateMotion dur="2s" repeatCount="indefinite"><mpath href="#sched-slow"/></animateMotion></circle>
+        <text x="600" y="268" fill="#58a6ff" font-size="10" font-weight="700">&gt; 5 min</text>
+
+        <!-- Node 5: Cron -->
+        <rect x="440" y="340" width="280" height="56" rx="10" fill="#161b22" stroke="rgba(88,166,255,0.4)" stroke-width="1.2"/>
+        <text x="580" y="362" fill="#58a6ff" font-size="12" font-weight="700" text-anchor="middle">🕐 Cron schedule (hourly / daily)</text>
+        <text x="580" y="378" fill="#495670" font-size="10" text-anchor="middle">Simple, predictable, cost-effective</text>
+      </svg>
+    </div>
+
+    <div class="code-block fade-up">
+<span class="comment"># Airflow DAG: orchestrate Dataform workflow run</span>
+<span class="keyword">from</span> airflow <span class="keyword">import</span> DAG
+<span class="keyword">from</span> airflow.providers.google.cloud.operators.dataform <span class="keyword">import</span> (
+    DataformCreateWorkflowInvocationOperator,
+)
+<span class="keyword">from</span> datetime <span class="keyword">import</span> datetime, timedelta
+
+<span class="keyword">with</span> DAG(
+    dag_id=<span class="string">"elt_daily_pipeline"</span>,
+    schedule_interval=<span class="string">"0 4 * * *"</span>,  <span class="comment"># 04:00 UTC daily</span>
+    default_args={
+        <span class="string">"retries"</span>: 2,
+        <span class="string">"retry_delay"</span>: timedelta(minutes=5),
+        <span class="string">"on_failure_callback"</span>: slack_alert,
+    },
+    catchup=<span class="keyword">False</span>,
+) <span class="keyword">as</span> dag:
+
+    run_dataform = DataformCreateWorkflowInvocationOperator(
+        task_id=<span class="string">"run_dataform"</span>,
+        project_id=<span class="string">"my-project"</span>,
+        region=<span class="string">"us-central1"</span>,
+        repository_id=<span class="string">"analytics"</span>,
+    )
+    </div>
+
+    <div class="callout fade-up">
+      <strong>Idempotency is non-negotiable.</strong> If your pipeline creates duplicates when re-run,
+      you will eventually have an incident. Every model should use <code>MERGE</code>,
+      partition-overwrite, or <code>CREATE OR REPLACE</code>. Test this by running the pipeline
+      twice in a row and asserting the output is identical.
+    </div>
+  </section>
+
+  <!-- ===================== MONITORING ===================== -->
+  <section id="monitoring">
+    <div class="section-title fade-up">Monitoring &amp; Observability</div>
+
+    <p class="body fade-up">
+      A pipeline that runs without monitoring is a pipeline that fails silently. Data observability
+      covers five areas: <span class="hi">lineage</span> (where does this data come from?),
+      <span class="hi">freshness</span> (is it current?), <span class="hi">volume</span> (is the
+      expected amount arriving?), <span class="hi">schema</span> (has the structure changed?), and
+      <span class="hi">cost</span> (are we spending what we expect?).
+    </p>
+
+    <div class="mon-grid fade-up">
+      <div class="mon-card">
+        <div class="mon-name">Lineage Tracking</div>
+        <div class="mon-desc">
+          Know the full path from source to report. When a dashboard number looks wrong, lineage lets
+          you trace backward through every transformation to find where the issue was introduced.
+          Tools: dbt docs, Dataform graph, OpenLineage, DataHub.
+        </div>
+      </div>
+      <div class="mon-card">
+        <div class="mon-name">Cost Monitoring</div>
+        <div class="mon-desc">
+          BigQuery on-demand pricing can surprise you. Track per-query costs, storage growth, and
+          slot utilization. Set budget alerts and use <code>INFORMATION_SCHEMA.JOBS</code> to find
+          expensive queries. Label every scheduled query for attribution.
+        </div>
+      </div>
+      <div class="mon-card">
+        <div class="mon-name">SLA Dashboards</div>
+        <div class="mon-desc">
+          Visualize data freshness against committed SLAs. "The daily revenue report should be
+          ready by 07:00." If the pipeline finishes at 07:15, the SLA dashboard shows red before
+          anyone files a ticket.
+        </div>
+      </div>
+      <div class="mon-card">
+        <div class="mon-name">Failure Alerting</div>
+        <div class="mon-desc">
+          Route alerts to the right channel: pipeline failures to the data engineering Slack channel,
+          data quality violations to the domain team, cost anomalies to the platform lead. Use
+          PagerDuty for P1 (revenue-impacting) failures.
+        </div>
+      </div>
+      <div class="mon-card">
+        <div class="mon-name">Metadata Management</div>
+        <div class="mon-desc">
+          Data catalogs (DataHub, Amundsen, Google Data Catalog) that document what each table
+          contains, who owns it, and when it was last updated. Without this, every new analyst
+          spends their first week asking "what does this column mean?"
+        </div>
+      </div>
+      <div class="mon-card">
+        <div class="mon-name">Schema Change Detection</div>
+        <div class="mon-desc">
+          Alert when an upstream source adds, removes, or renames columns. Catch breaking changes
+          at the ingestion boundary, not when a downstream model fails. Use ingestion schema
+          comparison and contract validation.
+        </div>
+      </div>
+    </div>
+
+    <div class="sub-title fade-up">Monitoring Stack Example</div>
+
+    <div class="fade-up" style="margin:24px 0;overflow-x:auto">
+      <svg viewBox="0 0 780 140" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:780px;display:block;margin:0 auto" font-family="'Inter',system-ui,sans-serif">
+        <defs>
+          <marker id="ah-mon" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#39d2c0"/></marker>
+        </defs>
+        <!-- Dashed container -->
+        <rect x="4" y="4" width="772" height="132" rx="12" fill="rgba(57,210,192,0.04)" stroke="rgba(57,210,192,0.15)" stroke-width="1.5" stroke-dasharray="8 4"/>
+        <text x="20" y="24" fill="#495670" font-size="10" font-weight="600" letter-spacing="1.5">MONITORING STACK</text>
+        <!-- Card 1: Pipeline Run -->
+        <rect x="24" y="38" width="150" height="64" rx="10" fill="#161b22" stroke="rgba(88,166,255,0.4)" stroke-width="1.2"/>
+        <text x="99" y="62" fill="#58a6ff" font-size="12" font-weight="700" text-anchor="middle">🚀 Pipeline Run</text>
+        <text x="99" y="80" fill="#495670" font-size="10" text-anchor="middle" font-family="'JetBrains Mono',monospace">Dataform / dbt</text>
+        <!-- Arrow 1 -->
+        <path id="mon-p1" d="M174,70 C194,70 198,70 218,70" fill="none" stroke="#39d2c0" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-mon)"/>
+        <circle r="2.5" fill="#39d2c0" opacity="0.8"><animateMotion dur="1.6s" repeatCount="indefinite"><mpath href="#mon-p1"/></animateMotion></circle>
+        <circle cx="196" cy="58" r="10" fill="#0a192f" stroke="#39d2c0" stroke-width="1.2"/><text x="196" y="62" fill="#39d2c0" font-size="9" font-weight="700" text-anchor="middle">1</text>
+        <!-- Card 2: Logs + Metrics -->
+        <rect x="224" y="38" width="150" height="64" rx="10" fill="#161b22" stroke="rgba(210,153,34,0.4)" stroke-width="1.2"/>
+        <text x="299" y="62" fill="#d29922" font-size="12" font-weight="700" text-anchor="middle">📋 Logs + Metrics</text>
+        <text x="299" y="80" fill="#495670" font-size="10" text-anchor="middle" font-family="'JetBrains Mono',monospace">Cloud Logging</text>
+        <!-- Arrow 2 -->
+        <path id="mon-p2" d="M374,70 C394,70 398,70 418,70" fill="none" stroke="#39d2c0" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-mon)"/>
+        <circle r="2.5" fill="#39d2c0" opacity="0.8"><animateMotion dur="1.6s" repeatCount="indefinite"><mpath href="#mon-p2"/></animateMotion></circle>
+        <circle cx="396" cy="58" r="10" fill="#0a192f" stroke="#39d2c0" stroke-width="1.2"/><text x="396" y="62" fill="#39d2c0" font-size="9" font-weight="700" text-anchor="middle">2</text>
+        <!-- Card 3: Dashboards -->
+        <rect x="424" y="38" width="150" height="64" rx="10" fill="#161b22" stroke="rgba(188,140,255,0.4)" stroke-width="1.2"/>
+        <text x="499" y="62" fill="#bc8cff" font-size="12" font-weight="700" text-anchor="middle">📊 Dashboards</text>
+        <text x="499" y="80" fill="#495670" font-size="10" text-anchor="middle" font-family="'JetBrains Mono',monospace">Grafana / Looker</text>
+        <!-- Arrow 3 -->
+        <path id="mon-p3" d="M574,70 C594,70 598,70 618,70" fill="none" stroke="#39d2c0" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-mon)"/>
+        <circle r="2.5" fill="#39d2c0" opacity="0.8"><animateMotion dur="1.6s" repeatCount="indefinite"><mpath href="#mon-p3"/></animateMotion></circle>
+        <circle cx="596" cy="58" r="10" fill="#0a192f" stroke="#39d2c0" stroke-width="1.2"/><text x="596" y="62" fill="#39d2c0" font-size="9" font-weight="700" text-anchor="middle">3</text>
+        <!-- Card 4: Alerts -->
+        <rect x="624" y="38" width="138" height="64" rx="10" fill="#161b22" stroke="rgba(248,81,73,0.4)" stroke-width="1.2"/>
+        <text x="693" y="62" fill="#f85149" font-size="12" font-weight="700" text-anchor="middle">🔔 Alerts</text>
+        <text x="693" y="80" fill="#495670" font-size="10" text-anchor="middle" font-family="'JetBrains Mono',monospace">Slack / PagerDuty</text>
+      </svg>
+    </div>
+
+    <div class="code-block fade-up">
+<span class="comment">-- BigQuery: find your most expensive queries (last 7 days)</span>
+<span class="keyword">SELECT</span>
+  user_email,
+  job_id,
+  <span class="function">ROUND</span>(total_bytes_processed / <span class="function">POW</span>(1024, 4), 2) <span class="keyword">AS</span> tb_processed,
+  <span class="function">ROUND</span>(total_bytes_processed / <span class="function">POW</span>(1024, 4) * 6.25, 2) <span class="keyword">AS</span> estimated_cost_usd,
+  <span class="function">TIMESTAMP_DIFF</span>(end_time, start_time, <span class="keyword">SECOND</span>) <span class="keyword">AS</span> duration_sec,
+  query
+<span class="keyword">FROM</span> <span class="accent">`region-us`</span>.INFORMATION_SCHEMA.JOBS
+<span class="keyword">WHERE</span> creation_time >= <span class="function">TIMESTAMP_SUB</span>(<span class="function">CURRENT_TIMESTAMP</span>(), <span class="keyword">INTERVAL</span> 7 <span class="keyword">DAY</span>)
+  <span class="keyword">AND</span> state = <span class="string">'DONE'</span>
+  <span class="keyword">AND</span> total_bytes_processed > 0
+<span class="keyword">ORDER BY</span> total_bytes_processed <span class="keyword">DESC</span>
+<span class="keyword">LIMIT</span> 20
+    </div>
+
+    <div class="callout fade-up">
+      <strong>The cost of not monitoring:</strong> I have seen a single unoptimized scheduled query
+      cost $400/day because it scanned a 2TB table every 15 minutes without partition pruning. A
+      5-minute setup of <code>INFORMATION_SCHEMA.JOBS</code> monitoring would have caught it on day one.
+      Label your queries, set budget alerts, and review the top-10 most expensive queries weekly.
+    </div>
+  </section>
+
+</div><!-- /.container -->
+
+<div class="footer">
+  <a href="../">&larr; Back to portfolio</a> &middot; Anvesh Jarabani &middot; July 2026
+</div>
+
+<script>
+// Spotlight
+const sp=document.getElementById('spotlight');
+document.addEventListener('mousemove',e=>{
+  sp.style.background=`radial-gradient(600px at ${e.clientX}px ${e.clientY}px,rgba(29,78,216,0.06),transparent 80%)`
+});
+
+// Fade-up
+const fadeObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){e.target.classList.add('visible');fadeObs.unobserve(e.target)}
+  })
+},{threshold:0.1});
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+window.scrollTo(0, 0);
+document.querySelectorAll('.fade-up').forEach(el => {
+  if (el.getBoundingClientRect().top < window.innerHeight) { el.classList.add('visible'); }
+  else { el.style.opacity = '0'; fadeObs.observe(el); }
+});
+
+// Scroll-spy
+const navLinks=document.querySelectorAll('.top-bar nav a');
+const spyObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      navLinks.forEach(l=>l.classList.remove('active'));
+      const link=document.querySelector(`.top-bar nav a[href="#${e.target.id}"]`);
+      if(link)link.classList.add('active')
+    }
+  })
+},{rootMargin:'-30% 0px -70% 0px'});
+document.querySelectorAll('section[id]').forEach(s=>spyObs.observe(s));
+
+// Staggered card animation
+const cardObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      const cards=e.target.querySelectorAll(
+        '.layer-card,.tool-card,.cdc-card,.quality-card,.orch-card,.mon-card,.stat-card,.contract-side'
+      );
+      cards.forEach((c,i)=>{
+        c.style.opacity='0';
+        c.style.transform='translateY(12px)';
+        c.style.transition='opacity .4s ease,transform .4s ease';
+        setTimeout(()=>{c.style.opacity='1';c.style.transform='translateY(0)'},i*80)
+      });
+      cardObs.unobserve(e.target)
+    }
+  })
+},{threshold:0.1});
+document.querySelectorAll(
+  '.layer-grid,.tool-grid,.cdc-grid,.quality-grid,.orch-grid,.mon-grid,.stat-grid,.contract-grid'
+).forEach(el=>cardObs.observe(el));
+// Smooth scroll for nav clicks
+document.querySelectorAll('.top-bar nav a[href^="#"]').forEach(function(a){a.addEventListener('click',function(e){e.preventDefault();var t=document.querySelector(this.getAttribute('href'));if(t)t.scrollIntoView({behavior:'smooth',block:'start'});history.pushState(null,'',this.getAttribute('href'))})});
+</script>
+</body>
+</html>

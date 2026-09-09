@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Building a Modern Analytics Stack — Anvesh Jarabani</title>
+<script>if("scrollRestoration" in history)history.scrollRestoration="manual";if(location.hash)history.replaceState(null,"",location.pathname);window.addEventListener("DOMContentLoaded",function(){window.scrollTo(0,0)});window.addEventListener("load",function(){window.scrollTo(0,0)});</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a192f;--bg-light:#112240;--border:#233554;
+  --text:#ccd6f6;--text-sec:#a8b2d1;--text-dim:#495670;
+  --accent:#64ffda;--accent-dim:rgba(100,255,218,0.1);
+  --white:#e6f1ff;
+  --warehouse:#58a6ff;--semantic:#3fb950;--bi:#bc8cff;
+  --cache:#d29922;--frontend:#39d2c0;
+}
+::selection{background:rgba(100,255,218,0.2)}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;font-size:15px}
+a{color:var(--accent);text-decoration:none;transition:opacity .2s}
+a:hover{opacity:.8}
+code,.mono{font-family:'JetBrains Mono',monospace;font-size:13px;background:rgba(100,255,218,0.07);padding:2px 6px;border-radius:4px;color:var(--accent)}
+pre{background:var(--bg-light);border:1px solid var(--border);border-radius:8px;padding:20px;overflow-x:auto;margin:16px 0;line-height:1.5}
+pre code{background:none;padding:0;font-size:13px;color:var(--text)}
+
+/* Layout */
+.top-bar{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(10,25,47,0.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between}
+.top-bar .back{font-size:13px;color:var(--text-sec);display:flex;align-items:center;gap:6px}
+.top-bar .back:hover{color:var(--accent)}
+.top-bar nav{display:flex;gap:20px}
+.top-bar nav a{font-size:12px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-dim);transition:color .2s}
+.top-bar nav a.active{color:var(--accent)}
+.top-bar nav a:hover{color:var(--text-sec);opacity:1}
+
+.container{max-width:900px;margin:0 auto;padding:92px 24px 60px}
+.hero-title{font-size:clamp(28px,4vw,40px);font-weight:800;color:var(--white);margin-bottom:8px;letter-spacing:-0.5px}
+.hero-sub{font-size:16px;color:var(--text-sec);margin-bottom:8px}
+.hero-meta{font-size:13px;color:var(--text-dim);margin-bottom:40px;display:flex;gap:16px;flex-wrap:wrap}
+.hero-meta span{display:flex;align-items:center;gap:4px}
+
+section{padding:48px 0;border-bottom:1px solid var(--border)}
+section:last-of-type{border-bottom:none}
+.section-title{font-size:13px;text-transform:uppercase;letter-spacing:2px;color:var(--accent);margin-bottom:24px;font-weight:600}
+
+/* Fade-in */
+.fade-up{transform:translateY(16px);transition:opacity .5s ease,transform .5s ease}
+.fade-up.visible{opacity:1;transform:translateY(0)}
+
+/* Architecture Diagram */
+.arch-diagram{display:flex;flex-direction:column;align-items:center;gap:0;margin:32px 0}
+.arch-layer{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;width:100%}
+.arch-box{background:var(--bg-light);border:1px solid var(--border);border-radius:8px;padding:16px 20px;text-align:center;flex:1;min-width:160px;max-width:260px;position:relative;transition:border-color .3s,box-shadow .3s}
+.arch-box:hover{border-color:var(--text-dim);box-shadow:0 4px 20px rgba(0,0,0,0.3)}
+.arch-box .label{font-size:14px;font-weight:600;color:var(--white);margin-bottom:4px}
+.arch-box .sub{font-size:11px;color:var(--text-dim);font-family:'JetBrains Mono',monospace}
+.arch-box.warehouse{border-color:rgba(88,166,255,0.3)}
+.arch-box.warehouse .label{color:var(--warehouse)}
+.arch-box.semantic{border-color:rgba(63,185,80,0.3)}
+.arch-box.semantic .label{color:var(--semantic)}
+.arch-box.cache{border-color:rgba(210,153,34,0.3)}
+.arch-box.cache .label{color:var(--cache)}
+.arch-box.bi{border-color:rgba(188,140,255,0.3)}
+.arch-box.bi .label{color:var(--bi)}
+.arch-box.ui{border-color:rgba(57,210,192,0.3)}
+.arch-box.ui .label{color:var(--frontend)}
+
+.arch-connectors{display:flex;justify-content:center;gap:40px;height:44px;align-items:center}
+.arch-arrow{display:flex;flex-direction:column;align-items:center;gap:0}
+.arch-arrow .arrow-label{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.arch-arrow .line{width:2px;height:20px;background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 4px,transparent 4px,transparent 8px);animation:dash-flow 1.5s linear infinite}
+.arch-arrow .arrow-head{width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid var(--border)}
+@keyframes dash-flow{from{background-position:0 0}to{background-position:0 8px}}
+
+.arch-legend{display:flex;gap:20px;flex-wrap:wrap;justify-content:center;margin-top:24px}
+.arch-legend span{font-size:11px;display:flex;align-items:center;gap:6px;color:var(--text-dim)}
+.arch-legend .dot{width:8px;height:8px;border-radius:50%}
+
+/* Fan-out items */
+.fan-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;width:100%}
+.fan-item{background:var(--bg-light);border:1px solid var(--border);border-radius:8px;padding:12px 16px;text-align:center;flex:1;min-width:140px;max-width:220px;transition:border-color .3s}
+.fan-item:hover{border-color:var(--text-dim)}
+.fan-item .label{font-size:13px;font-weight:600;color:var(--white);margin-bottom:2px}
+.fan-item .sub{font-size:10px;color:var(--text-dim);font-family:'JetBrains Mono',monospace}
+
+/* Cards */
+.card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin:20px 0}
+.card{background:var(--bg-light);border:1px solid var(--border);border-radius:8px;padding:20px;transition:all .25s}
+.card:hover{border-color:var(--text-dim);background:rgba(100,255,218,0.03);box-shadow:0 4px 20px rgba(0,0,0,0.2)}
+.card .card-title{font-size:14px;font-weight:600;color:var(--white);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.card .card-title .icon{font-size:16px}
+.card p,.card li{font-size:13px;color:var(--text-sec);line-height:1.6}
+.card ul{list-style:none;padding:0}
+.card li{padding:3px 0}
+.card li::before{content:"→ ";color:var(--accent);font-size:12px}
+
+/* Cube models table */
+.cube-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:20px 0}
+.cube-card{background:var(--bg-light);border:1px solid var(--border);border-radius:8px;padding:16px;transition:all .25s}
+.cube-card:hover{border-color:var(--semantic);box-shadow:0 0 20px rgba(63,185,80,0.08)}
+.cube-card .cube-name{font-size:14px;font-weight:600;color:var(--semantic);margin-bottom:4px}
+.cube-card .cube-focus{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
+.cube-card .cube-measures{font-size:12px;color:var(--text-sec)}
+.cube-card .cube-measures code{font-size:11px}
+
+/* Sequence diagram */
+.seq-diagram{display:flex;flex-direction:column;gap:0;margin:24px 0}
+.seq-step{display:flex;align-items:flex-start;gap:16px;padding:16px 0}
+.seq-num{width:28px;height:28px;border-radius:50%;background:var(--accent-dim);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;margin-top:2px}
+.seq-line{width:2px;background:var(--border);position:relative}
+.seq-content{flex:1}
+.seq-actor{font-size:12px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.seq-desc{font-size:13px;color:var(--text-sec)}
+
+/* Tier cards */
+.tier-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin:20px 0}
+.tier-card{background:var(--bg-light);border:1px solid var(--border);border-radius:8px;padding:20px;transition:all .25s}
+.tier-card:hover{border-color:var(--text-dim);box-shadow:0 4px 20px rgba(0,0,0,0.2)}
+.tier-card .tier-label{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;margin-bottom:4px}
+.tier-card .tier-latency{font-size:20px;font-weight:800;color:var(--white);margin-bottom:8px}
+.tier-card .tier-pattern{font-size:12px;color:var(--text-sec);margin-bottom:8px}
+.tier-card .tier-use{font-size:12px;color:var(--text-dim);font-style:italic}
+.tier-card .tier-count{font-size:11px;color:var(--accent);margin-top:8px;font-weight:600}
+.t0 .tier-label{color:var(--frontend)}
+.t1 .tier-label{color:var(--semantic)}
+.t2 .tier-label{color:var(--cache)}
+.t3 .tier-label{color:var(--bi)}
+
+/* Timeline */
+.timeline{position:relative;height:60px;margin:32px 0;background:var(--bg-light);border-radius:8px;border:1px solid var(--border);display:flex;align-items:center;padding:0 24px}
+.timeline-line{position:absolute;left:24px;right:24px;height:2px;background:var(--border)}
+.timeline-point{position:absolute;display:flex;flex-direction:column;align-items:center;transform:translateX(-50%)}
+.timeline-point .dot{width:10px;height:10px;border-radius:50%;margin-bottom:4px}
+.timeline-point .tp-label{font-size:9px;font-weight:600;white-space:nowrap}
+.timeline-point .tp-time{font-size:9px;color:var(--text-dim);white-space:nowrap}
+
+/* Cost bars */
+.cost-bars{margin:24px 0}
+.cost-row{display:flex;align-items:center;gap:16px;margin-bottom:16px}
+.cost-label{width:120px;font-size:13px;color:var(--text-sec);text-align:right;flex-shrink:0}
+.cost-track{flex:1;height:28px;background:var(--bg-light);border-radius:6px;border:1px solid var(--border);overflow:hidden;position:relative}
+.cost-bar-fill{height:100%;border-radius:5px;width:0;transition:width 1.2s cubic-bezier(.22,1,.36,1);display:flex;align-items:center;padding:0 12px}
+.cost-bar-fill span{font-size:11px;font-weight:600;color:var(--bg);white-space:nowrap}
+.cost-bar-fill.oss{background:linear-gradient(90deg,#2ea043,#3fb950)}
+.cost-bar-fill.metabase{background:linear-gradient(90deg,#9e6a03,#d29922)}
+.cost-bar-fill.tableau{background:linear-gradient(90deg,#6e40c9,#bc8cff)}
+.cost-bar-fill.looker{background:linear-gradient(90deg,#da3633,#f85149)}
+
+/* Comparison table */
+.comp-table{width:100%;border-collapse:collapse;margin:20px 0;font-size:13px}
+.comp-table th{text-align:left;padding:10px 14px;border-bottom:2px solid var(--border);color:var(--text-dim);font-size:11px;text-transform:uppercase;letter-spacing:1px;font-weight:600}
+.comp-table td{padding:10px 14px;border-bottom:1px solid var(--border);color:var(--text-sec)}
+.comp-table tr:hover td{background:var(--accent-dim)}
+.comp-table tr.highlight td{color:var(--accent);font-weight:600}
+
+/* RLS layers */
+.rls-stack{display:flex;flex-direction:column;gap:12px;margin:20px 0}
+.rls-card{background:var(--bg-light);border:1px solid var(--border);border-radius:8px;padding:16px 20px;display:flex;gap:16px;align-items:flex-start;transition:all .25s}
+.rls-card:hover{border-color:var(--text-dim);background:rgba(100,255,218,0.02)}
+.rls-num{width:28px;height:28px;border-radius:50%;background:var(--accent-dim);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.rls-content{flex:1}
+.rls-title{font-size:14px;font-weight:600;color:var(--white);margin-bottom:4px}
+.rls-desc{font-size:13px;color:var(--text-sec);line-height:1.6}
+
+/* Docker flow */
+.docker-flow{display:flex;flex-direction:column;align-items:center;gap:0;margin:24px 0}
+.docker-node{background:var(--bg-light);border:1px solid var(--border);border-radius:8px;padding:14px 24px;min-width:380px;text-align:center;transition:border-color .3s}
+.docker-node:hover{border-color:var(--text-dim)}
+.docker-node .dn-title{font-size:13px;font-weight:600;color:var(--white)}
+.docker-node .dn-sub{font-size:11px;color:var(--text-dim);font-family:'JetBrains Mono',monospace}
+.docker-connector{display:flex;flex-direction:column;align-items:center}
+.docker-connector .vline{width:2px;height:16px;background:var(--border)}
+.docker-connector .arrow-down{width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid var(--border)}
+.docker-pills{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:8px}
+.docker-pill{font-family:'JetBrains Mono',monospace;font-size:11px;background:rgba(100,255,218,0.07);border:1px solid var(--border);border-radius:6px;padding:4px 10px;color:var(--text-sec)}
+.docker-pill.pkg{border-color:rgba(63,185,80,0.3);color:var(--semantic)}
+.docker-pill.file{border-color:rgba(188,140,255,0.3);color:var(--bi)}
+
+/* Callout */
+.callout{background:var(--accent-dim);border:1px solid rgba(100,255,218,0.15);border-radius:8px;padding:16px 20px;margin:20px 0;font-size:13px;color:var(--text-sec);line-height:1.6}
+.callout strong{color:var(--accent)}
+.callout code{background:rgba(100,255,218,0.12)}
+
+/* Highlight */
+.hi{color:var(--white);font-weight:600}
+.ac{color:var(--accent);font-weight:700}
+
+/* Spotlight */
+#spotlight{position:fixed;inset:0;z-index:0;pointer-events:none;transition:background .15s}
+.container,.top-bar{position:relative;z-index:1}
+
+/* Footer */
+.footer{text-align:center;padding:40px 24px;font-size:12px;color:var(--text-dim)}
+.footer a{color:var(--text-sec)}
+.footer a:hover{color:var(--accent)}
+
+/* Responsive */
+@media(max-width:600px){
+  .top-bar nav{display:none}
+  .arch-layer,.fan-row{flex-direction:column;align-items:center}
+  .arch-box,.fan-item{max-width:100%}
+  .cost-label{width:80px;font-size:11px}
+  .docker-node{min-width:auto;width:100%}
+  .card-grid{grid-template-columns:1fr}
+  .tier-grid{grid-template-columns:1fr}
+  .cube-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div id="spotlight"></div>
+
+<div class="top-bar">
+  <a href="../" class="back">← anveshjarabani.com</a>
+  <nav>
+    <a href="#overview">Overview</a>
+    <a href="#cubejs">Cube.js</a>
+    <a href="#superset">Superset</a>
+    <a href="#security">RLS</a>
+    <a href="#tiers">Latency</a>
+    <a href="#embedding">Embedding</a>
+    <a href="#docker">Docker</a>
+    <a href="#cost">Cost</a>
+  </nav>
+</div>
+
+<div class="container">
+
+  <div class="fade-up">
+    <h1 class="hero-title">Building a Modern Analytics Stack</h1>
+    <p class="hero-sub">How to replace commercial BI with an open-source stack — Cube.js, Superset, BigQuery, and DuckDB — at a fraction of the cost.</p>
+    <div class="hero-meta">
+      <span>Anvesh Jarabani</span>
+      <span>·</span>
+      <span>July 2026</span>
+      <span>·</span>
+      <span>15 min read</span>
+    </div>
+  </div>
+
+  <!-- Overview -->
+  <section id="overview">
+    <div class="section-title fade-up">Architecture Overview</div>
+    <p class="fade-up" style="margin-bottom:24px;color:var(--text-sec)">
+      A <span class="hi">5-layer architecture</span> that separates concerns cleanly: the warehouse handles storage and compute, a semantic layer governs business logic and caching, and multiple consumers — from dashboards to AI agents — query through a single governed interface.
+    </p>
+
+    <div class="fade-up" style="margin:32px 0;overflow-x:auto">
+      <svg viewBox="0 0 880 520" style="width:100%;max-width:880px;margin:0 auto;display:block;font-family:Inter,system-ui,sans-serif" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <!-- Arrowhead markers -->
+          <marker id="ah-blue" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#58a6ff"/></marker>
+          <marker id="ah-green" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#3fb950"/></marker>
+          <marker id="ah-purple" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#bc8cff"/></marker>
+          <marker id="ah-gold" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#d29922"/></marker>
+          <marker id="ah-teal" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#39d2c0"/></marker>
+          <!-- Glow filters -->
+          <filter id="glow-blue"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          <filter id="glow-green"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        </defs>
+
+        <!-- ═══ LAYER: Data Warehouse (dashed container) ═══ -->
+        <rect x="12" y="8" width="856" height="95" rx="12" fill="rgba(88,166,255,0.04)" stroke="rgba(88,166,255,0.2)" stroke-width="1.5" stroke-dasharray="8 4"/>
+        <text x="28" y="28" fill="#58a6ff" font-size="9" font-weight="700" letter-spacing="1.5" text-transform="uppercase" opacity="0.7">DATA WAREHOUSE</text>
+
+        <!-- BigQuery box -->
+        <rect x="60" y="36" width="200" height="56" rx="10" fill="#161b22" stroke="rgba(88,166,255,0.4)" stroke-width="1.2"/>
+        <text x="100" y="60" fill="#58a6ff" font-size="14" font-weight="700">BigQuery</text>
+        <text x="100" y="78" fill="#495670" font-size="10" font-family="JetBrains Mono,monospace">app_analytics dataset</text>
+        <text x="74" y="68" font-size="18">🗄️</text>
+
+        <!-- DuckDB box -->
+        <rect x="310" y="36" width="200" height="56" rx="10" fill="#161b22" stroke="rgba(88,166,255,0.4)" stroke-width="1.2"/>
+        <text x="350" y="60" fill="#58a6ff" font-size="14" font-weight="700">DuckDB</text>
+        <text x="350" y="78" fill="#495670" font-size="10" font-family="JetBrains Mono,monospace">OLAP cache via httpfs</text>
+        <text x="324" y="68" font-size="18">🦆</text>
+
+        <!-- GCS Parquet (small badge between BQ and DuckDB) -->
+        <rect x="560" y="40" width="130" height="48" rx="8" fill="rgba(210,153,34,0.08)" stroke="rgba(210,153,34,0.3)" stroke-width="1"/>
+        <text x="590" y="60" fill="#d29922" font-size="11" font-weight="600">GCS Parquet</text>
+        <text x="590" y="75" fill="#495670" font-size="9" font-family="JetBrains Mono,monospace">csv.gz / 1-day TTL</text>
+        <text x="570" y="68" font-size="14">📦</text>
+
+        <!-- ═══ Arrow: Warehouse → Semantic (with step ①) ═══ -->
+        <line x1="160" y1="92" x2="160" y2="145" stroke="#3fb950" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-green)"/>
+        <circle cx="160" cy="118" r="10" fill="#0a192f" stroke="#3fb950" stroke-width="1.2"/>
+        <text x="160" y="122" fill="#3fb950" font-size="9" font-weight="700" text-anchor="middle">1</text>
+        <text x="176" y="122" fill="#495670" font-size="9">SQL query</text>
+        <!-- Animated dot on path -->
+        <circle r="2.5" fill="#3fb950" opacity="0.8"><animateMotion dur="2s" repeatCount="indefinite" path="M160,92 L160,145"/></circle>
+
+        <line x1="410" y1="92" x2="410" y2="145" stroke="#3fb950" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-green)"/>
+        <circle cx="410" cy="118" r="10" fill="#0a192f" stroke="#3fb950" stroke-width="1.2"/>
+        <text x="410" y="122" fill="#3fb950" font-size="9" font-weight="700" text-anchor="middle">2</text>
+        <text x="426" y="122" fill="#495670" font-size="9">Parquet read</text>
+        <circle r="2.5" fill="#3fb950" opacity="0.8"><animateMotion dur="2.5s" repeatCount="indefinite" path="M410,92 L410,145"/></circle>
+
+        <!-- BQ to GCS arrow -->
+        <line x1="260" y1="64" x2="555" y2="64" stroke="#d29922" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#ah-gold)"/>
+        <circle r="2" fill="#d29922" opacity="0.7"><animateMotion dur="3s" repeatCount="indefinite" path="M260,64 L555,64"/></circle>
+
+        <!-- ═══ LAYER: Semantic + Cache (dashed container) ═══ -->
+        <rect x="12" y="145" width="856" height="95" rx="12" fill="rgba(63,185,80,0.04)" stroke="rgba(63,185,80,0.15)" stroke-width="1.5" stroke-dasharray="8 4"/>
+        <text x="28" y="165" fill="#3fb950" font-size="9" font-weight="700" letter-spacing="1.5" opacity="0.7">SEMANTIC + CACHE LAYER</text>
+
+        <!-- Cube.js box -->
+        <rect x="60" y="175" width="200" height="56" rx="10" fill="#161b22" stroke="rgba(63,185,80,0.4)" stroke-width="1.2"/>
+        <text x="100" y="199" fill="#3fb950" font-size="14" font-weight="700">Cube.js</text>
+        <text x="100" y="217" fill="#495670" font-size="10" font-family="JetBrains Mono,monospace">:4000 HTTP / :15432 SQL</text>
+        <text x="74" y="207" font-size="18">🧊</text>
+
+        <!-- Redis box -->
+        <rect x="310" y="175" width="200" height="56" rx="10" fill="#161b22" stroke="rgba(210,153,34,0.4)" stroke-width="1.2"/>
+        <text x="350" y="199" fill="#d29922" font-size="14" font-weight="700">Redis</text>
+        <text x="350" y="217" fill="#495670" font-size="10" font-family="JetBrains Mono,monospace">:6379 / DB 2-6</text>
+        <text x="324" y="207" font-size="18">⚡</text>
+
+        <!-- Cube → Redis bidirectional -->
+        <line x1="260" y1="198" x2="305" y2="198" stroke="#d29922" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#ah-gold)"/>
+        <line x1="305" y1="212" x2="260" y2="212" stroke="#3fb950" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#ah-green)"/>
+        <circle r="2" fill="#d29922" opacity="0.7"><animateMotion dur="1.5s" repeatCount="indefinite" path="M260,198 L305,198"/></circle>
+
+        <!-- CubeStore box (small, to the right) -->
+        <rect x="560" y="175" width="130" height="56" rx="8" fill="rgba(63,185,80,0.06)" stroke="rgba(63,185,80,0.3)" stroke-width="1"/>
+        <text x="590" y="199" fill="#3fb950" font-size="12" font-weight="600">CubeStore</text>
+        <text x="590" y="215" fill="#495670" font-size="9" font-family="JetBrains Mono,monospace">Columnar Parquet</text>
+        <text x="570" y="207" font-size="14">📊</text>
+
+        <!-- Cube → CubeStore -->
+        <line x1="510" y1="203" x2="555" y2="203" stroke="#3fb950" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#ah-green)"/>
+
+        <!-- ═══ Arrows: Semantic → Consumers (with steps ③④⑤) ═══ -->
+        <!-- Fork paths using bezier curves -->
+        <path d="M160,231 C160,265 100,285 100,310" fill="none" stroke="#39d2c0" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-teal)" id="path-kpi"/>
+        <circle cx="160" cy="255" r="10" fill="#0a192f" stroke="#39d2c0" stroke-width="1.2"/>
+        <text x="160" y="259" fill="#39d2c0" font-size="9" font-weight="700" text-anchor="middle">3</text>
+        <text x="120" y="270" fill="#495670" font-size="8">REST API</text>
+        <circle r="2.5" fill="#39d2c0" opacity="0.8"><animateMotion dur="2s" repeatCount="indefinite"><mpath href="#path-kpi"/></animateMotion></circle>
+
+        <path d="M200,231 C200,268 290,280 290,310" fill="none" stroke="#bc8cff" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-purple)" id="path-ss"/>
+        <circle cx="240" cy="263" r="10" fill="#0a192f" stroke="#bc8cff" stroke-width="1.2"/>
+        <text x="240" y="267" fill="#bc8cff" font-size="9" font-weight="700" text-anchor="middle">4</text>
+        <text x="256" y="267" fill="#495670" font-size="8">SQL wire</text>
+        <circle r="2.5" fill="#bc8cff" opacity="0.8"><animateMotion dur="2.2s" repeatCount="indefinite"><mpath href="#path-ss"/></animateMotion></circle>
+
+        <path d="M240,231 C260,268 460,275 480,310" fill="none" stroke="#8b949e" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-teal)" id="path-mcp"/>
+        <circle cx="370" cy="270" r="10" fill="#0a192f" stroke="#8b949e" stroke-width="1.2"/>
+        <text x="370" y="274" fill="#8b949e" font-size="9" font-weight="700" text-anchor="middle">5</text>
+        <text x="386" y="274" fill="#495670" font-size="8">MCP tools</text>
+        <circle r="2.5" fill="#8b949e" opacity="0.6"><animateMotion dur="3s" repeatCount="indefinite"><mpath href="#path-mcp"/></animateMotion></circle>
+
+        <!-- ═══ LAYER: Consumers (dashed container) ═══ -->
+        <rect x="12" y="295" width="565" height="95" rx="12" fill="rgba(188,140,255,0.03)" stroke="rgba(188,140,255,0.15)" stroke-width="1.5" stroke-dasharray="8 4"/>
+        <text x="28" y="315" fill="#bc8cff" font-size="9" font-weight="700" letter-spacing="1.5" opacity="0.7">CONSUMERS</text>
+
+        <!-- React KPI Cards -->
+        <rect x="40" y="325" width="148" height="52" rx="10" fill="#161b22" stroke="rgba(57,210,192,0.4)" stroke-width="1.2"/>
+        <text x="73" y="348" fill="#39d2c0" font-size="12" font-weight="700">React KPI Cards</text>
+        <text x="73" y="364" fill="#495670" font-size="9" font-family="JetBrains Mono,monospace">:4200 / REST</text>
+        <text x="50" y="356" font-size="14">📈</text>
+
+        <!-- Superset -->
+        <rect x="218" y="325" width="148" height="52" rx="10" fill="#161b22" stroke="rgba(188,140,255,0.4)" stroke-width="1.2"/>
+        <text x="251" y="348" fill="#bc8cff" font-size="12" font-weight="700">Superset</text>
+        <text x="251" y="364" fill="#495670" font-size="9" font-family="JetBrains Mono,monospace">:8088 / SQL :15432</text>
+        <text x="228" y="356" font-size="14">📊</text>
+
+        <!-- MCP Server -->
+        <rect x="400" y="325" width="148" height="52" rx="10" fill="#161b22" stroke="rgba(135,149,174,0.4)" stroke-width="1.2"/>
+        <text x="433" y="348" fill="#8b949e" font-size="12" font-weight="700">MCP Server</text>
+        <text x="433" y="364" fill="#495670" font-size="9" font-family="JetBrains Mono,monospace">LLM NLQ agents</text>
+        <text x="410" y="356" font-size="14">🤖</text>
+
+        <!-- ═══ LAYER: BI Features (right panel) ═══ -->
+        <rect x="600" y="295" width="268" height="210" rx="12" fill="rgba(188,140,255,0.03)" stroke="rgba(188,140,255,0.15)" stroke-width="1.5" stroke-dasharray="8 4"/>
+        <text x="616" y="315" fill="#bc8cff" font-size="9" font-weight="700" letter-spacing="1.5" opacity="0.7">BI FEATURES</text>
+
+        <!-- Embedded Dashboards -->
+        <rect x="620" y="325" width="228" height="36" rx="8" fill="#161b22" stroke="rgba(188,140,255,0.35)" stroke-width="1"/>
+        <text x="650" y="348" fill="#bc8cff" font-size="11" font-weight="600">Embedded Dashboards</text>
+        <text x="630" y="348" font-size="12">🖥️</text>
+
+        <!-- Celery Workers -->
+        <rect x="620" y="370" width="228" height="36" rx="8" fill="#161b22" stroke="rgba(188,140,255,0.35)" stroke-width="1"/>
+        <text x="650" y="393" fill="#bc8cff" font-size="11" font-weight="600">Celery Workers</text>
+        <text x="630" y="393" font-size="12">⚙️</text>
+
+        <!-- Alerts -->
+        <rect x="620" y="415" width="228" height="36" rx="8" fill="#161b22" stroke="rgba(188,140,255,0.35)" stroke-width="1"/>
+        <text x="650" y="438" fill="#bc8cff" font-size="11" font-weight="600">Alerts &amp; Reports</text>
+        <text x="630" y="438" font-size="12">🔔</text>
+
+        <!-- Redis allocation (bottom right) -->
+        <rect x="620" y="460" width="228" height="36" rx="8" fill="rgba(210,153,34,0.06)" stroke="rgba(210,153,34,0.3)" stroke-width="1"/>
+        <text x="650" y="483" fill="#d29922" font-size="11" font-weight="600">Redis DB 2-6</text>
+        <text x="800" y="483" fill="#495670" font-size="9">cache + broker</text>
+        <text x="630" y="483" font-size="12">⚡</text>
+
+        <!-- Superset → BI Features arrow -->
+        <path d="M366,351 C450,351 580,343 615,343" fill="none" stroke="#bc8cff" stroke-width="1.2" stroke-dasharray="5 3" marker-end="url(#ah-purple)" id="path-bi"/>
+        <circle cx="490" cy="348" r="10" fill="#0a192f" stroke="#bc8cff" stroke-width="1.2"/>
+        <text x="490" y="352" fill="#bc8cff" font-size="9" font-weight="700" text-anchor="middle">6</text>
+        <circle r="2" fill="#bc8cff" opacity="0.7"><animateMotion dur="2s" repeatCount="indefinite"><mpath href="#path-bi"/></animateMotion></circle>
+
+        <!-- ═══ LAYER: Redis Allocation (bottom) ═══ -->
+        <rect x="12" y="410" width="565" height="95" rx="12" fill="rgba(210,153,34,0.03)" stroke="rgba(210,153,34,0.12)" stroke-width="1.5" stroke-dasharray="8 4"/>
+        <text x="28" y="430" fill="#d29922" font-size="9" font-weight="700" letter-spacing="1.5" opacity="0.7">REDIS ALLOCATION</text>
+
+        <rect x="40" y="445" width="160" height="46" rx="8" fill="#161b22" stroke="rgba(210,153,34,0.35)" stroke-width="1"/>
+        <text x="55" y="465" fill="#d29922" font-size="11" font-weight="600">Superset Cache</text>
+        <text x="55" y="480" fill="#495670" font-size="9" font-family="JetBrains Mono,monospace">DB 2, 3, 4</text>
+
+        <rect x="220" y="445" width="160" height="46" rx="8" fill="#161b22" stroke="rgba(210,153,34,0.35)" stroke-width="1"/>
+        <text x="235" y="465" fill="#d29922" font-size="11" font-weight="600">Celery Broker</text>
+        <text x="235" y="480" fill="#495670" font-size="9" font-family="JetBrains Mono,monospace">DB 5, 6</text>
+
+        <rect x="400" y="445" width="160" height="46" rx="8" fill="#161b22" stroke="rgba(210,153,34,0.35)" stroke-width="1"/>
+        <text x="415" y="465" fill="#d29922" font-size="11" font-weight="600">Cube.js Cache</text>
+        <text x="415" y="480" fill="#495670" font-size="9" font-family="JetBrains Mono,monospace">memory / Redis</text>
+
+        <!-- Consumer → Redis arrows -->
+        <line x1="114" y1="377" x2="114" y2="440" stroke="#d29922" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#ah-gold)"/>
+        <line x1="292" y1="377" x2="300" y2="440" stroke="#d29922" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#ah-gold)"/>
+        <line x1="474" y1="377" x2="480" y2="440" stroke="#d29922" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#ah-gold)"/>
+
+        <!-- ═══ LEGEND ═══ -->
+        <circle cx="50" cy="515" r="4" fill="#58a6ff"/><text x="60" y="518" fill="#495670" font-size="10">Warehouse</text>
+        <circle cx="160" cy="515" r="4" fill="#3fb950"/><text x="170" y="518" fill="#495670" font-size="10">Semantic</text>
+        <circle cx="260" cy="515" r="4" fill="#bc8cff"/><text x="270" y="518" fill="#495670" font-size="10">BI</text>
+        <circle cx="330" cy="515" r="4" fill="#d29922"/><text x="340" y="518" fill="#495670" font-size="10">Cache</text>
+        <circle cx="410" cy="515" r="4" fill="#39d2c0"/><text x="420" y="518" fill="#495670" font-size="10">Frontend</text>
+      </svg>
+    </div>
+  </section>
+
+  <!-- Cube.js -->
+  <section id="cubejs">
+    <div class="section-title fade-up">Cube.js Semantic Layer</div>
+    <p class="fade-up" style="margin-bottom:20px;color:var(--text-sec)">
+      <span class="ac">7 data model cubes</span> with multi-tenant security, pre-aggregations, and automatic refresh. The semantic layer sits between the warehouse and all consumers, ensuring every dashboard and AI agent queries through governed, cached business logic.
+    </p>
+
+    <div class="cube-grid fade-up">
+      <div class="cube-card">
+        <div class="cube-name">Patients</div>
+        <div class="cube-focus">Census</div>
+        <div class="cube-measures"><code>count</code> <code>active_count</code></div>
+      </div>
+      <div class="cube-card">
+        <div class="cube-name">Admissions</div>
+        <div class="cube-focus">Rates</div>
+        <div class="cube-measures"><code>count</code> <code>avg_length_of_stay</code></div>
+      </div>
+      <div class="cube-card">
+        <div class="cube-name">Episodes</div>
+        <div class="cube-focus">Lifecycle</div>
+        <div class="cube-measures"><code>count</code> <code>active_count</code> <code>avg_duration_days</code></div>
+      </div>
+      <div class="cube-card">
+        <div class="cube-name">Visits</div>
+        <div class="cube-focus">Completion</div>
+        <div class="cube-measures"><code>count</code> <code>completed_count</code> <code>missed_count</code> <code>completion_rate</code></div>
+      </div>
+      <div class="cube-card">
+        <div class="cube-name">Authorizations</div>
+        <div class="cube-focus">Utilization</div>
+        <div class="cube-measures"><code>count</code> <code>total_authorized</code> <code>total_used</code> <code>utilization_rate</code></div>
+      </div>
+      <div class="cube-card">
+        <div class="cube-name">Practitioners</div>
+        <div class="cube-focus">Workload</div>
+        <div class="cube-measures"><code>count</code> <code>active_count</code></div>
+      </div>
+      <div class="cube-card">
+        <div class="cube-name">Care Plans</div>
+        <div class="cube-focus">Signatures</div>
+        <div class="cube-measures"><code>count</code> <code>unsigned_count</code> <code>avg_days_to_sign</code></div>
+      </div>
+    </div>
+
+    <div class="callout fade-up">
+      <strong>Multi-Tenant Security:</strong> Every query is scoped via <code>contextToAppId</code> (partitions cache by organization) and <code>queryRewrite</code> (auto-appends <code>WHERE organization_path LIKE '{org_path}%'</code>). A clinic sees only its data; a regional office sees all clinics beneath it. Zero trust boundary — applied at the semantic layer before any query reaches BigQuery.
+    </div>
+
+    <p class="fade-up" style="color:var(--text-sec);margin-top:16px">
+      <span class="hi">Pre-aggregation strategy:</span> High-frequency cubes like Patients use daily-granularity pre-aggregations with <span class="ac">15-minute refresh</span> intervals, stored in Cube Store's columnar Parquet format. This gives sub-second dashboard loads while keeping data within minutes of the source.
+    </p>
+  </section>
+
+  <!-- Superset -->
+  <section id="superset">
+    <div class="section-title fade-up">Superset BI Engine</div>
+    <p class="fade-up" style="margin-bottom:20px;color:var(--text-sec)">
+      Apache Superset <span class="ac">4.1.1</span> with Okta OIDC, embedded dashboards, Celery async, and Redis caching.
+    </p>
+
+    <div class="card-grid fade-up">
+      <div class="card">
+        <div class="card-title"><span class="icon">🔐</span> Authentication</div>
+        <ul>
+          <li>Okta OIDC via Flask-AppBuilder <code>AUTH_OAUTH</code></li>
+          <li>Custom <code>TenantSecurityManager</code> for RLS</li>
+          <li>Auto-provisions users with org mapping from JWT claims</li>
+          <li>Roles synced from OIDC groups</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="icon">🗄️</span> Data Sources</div>
+        <ul>
+          <li><span class="hi">Primary:</span> Cube.js SQL API (port 15432)</li>
+          <li><span class="hi">Fast cache:</span> DuckDB (local Parquet via httpfs)</li>
+          <li><span class="hi">Power users:</span> BigQuery direct (sqlalchemy-bigquery)</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="icon">🚩</span> Feature Flags</div>
+        <ul>
+          <li><code>EMBEDDED_SUPERSET</code> — iframe embedding</li>
+          <li><code>ALERT_REPORTS</code> — threshold-based alerts</li>
+          <li><code>DASHBOARD_RBAC</code> — role-based dashboard access</li>
+          <li><code>ENABLE_TEMPLATE_PROCESSING</code> — Jinja in SQL</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="icon">⚡</span> Caching (Redis)</div>
+        <ul>
+          <li><span class="hi">DB 2:</span> General cache (5-min TTL)</li>
+          <li><span class="hi">DB 3:</span> Data query cache (10-min TTL)</li>
+          <li><span class="hi">DB 4:</span> Filter state cache (10-min TTL)</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="icon">⚙️</span> Async / Celery</div>
+        <ul>
+          <li>Workers with Redis DB 5 as broker</li>
+          <li>Results stored in Redis DB 6</li>
+          <li>Beat scheduler: reports every 60s check interval</li>
+          <li>Async queries for long-running analytics</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="icon">📊</span> Embedding</div>
+        <ul>
+          <li>Guest tokens with 1-hour expiry</li>
+          <li>CORS enabled for application origin</li>
+          <li>Talisman CSP disabled for iframe compatibility</li>
+          <li><code>@superset-ui/embedded-sdk</code> React integration</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="icon">🔍</span> SQL Lab</div>
+        <ul>
+          <li><code>RESULTS_BACKEND</code> via cachelib Redis</li>
+          <li>Max 10,000 rows per query</li>
+          <li>300-second query timeout</li>
+          <li>Role-gated access for power users</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- RLS -->
+  <section id="security">
+    <div class="section-title fade-up">Row-Level Security</div>
+    <p class="fade-up" style="margin-bottom:20px;color:var(--text-sec)">
+      RLS enforcement at <span class="hi">every layer</span> — <code>organization_path</code> flows through the entire stack, from identity provider to warehouse.
+    </p>
+
+    <div class="rls-stack fade-up">
+      <div class="rls-card">
+        <div class="rls-num">1</div>
+        <div class="rls-content">
+          <div class="rls-title">Identity Provider (Okta)</div>
+          <div class="rls-desc">JWT contains <code>organization_path</code> claim (e.g., <code>/acme/northeast/boston</code>). Issued at login via OIDC Authorization Code + PKCE flow.</div>
+        </div>
+      </div>
+      <div class="rls-card">
+        <div class="rls-num">2</div>
+        <div class="rls-content">
+          <div class="rls-title">Cube.js Semantic Layer</div>
+          <div class="rls-desc"><code>queryRewrite()</code> auto-appends <code>WHERE organization_path LIKE '{org_path}%'</code> to every query. <code>contextToAppId()</code> isolates cache per tenant by appending org_path to the cache key.</div>
+        </div>
+      </div>
+      <div class="rls-card">
+        <div class="rls-num">3</div>
+        <div class="rls-content">
+          <div class="rls-title">Apache Superset</div>
+          <div class="rls-desc"><code>TenantSecurityManager</code> (custom Flask-AppBuilder subclass) maps Okta groups to Superset roles and injects RLS WHERE clause per embed via guest tokens.</div>
+        </div>
+      </div>
+      <div class="rls-card">
+        <div class="rls-num">4</div>
+        <div class="rls-content">
+          <div class="rls-title">BigQuery</div>
+          <div class="rls-desc">Views filtered by <code>organization_path</code>. CDC replicates full tables from the primary database, but all queries are scoped by org_path at higher layers.</div>
+        </div>
+      </div>
+      <div class="rls-card">
+        <div class="rls-num">5</div>
+        <div class="rls-content">
+          <div class="rls-title">AI Agents (ADK)</div>
+          <div class="rls-desc">ADK agent receives <code>organization_path</code> from JWT, passes to <code>BigQueryToolset</code> as a filter parameter. All NLQ-generated SQL is scoped to the tenant.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout fade-up">
+      <strong>Hierarchical paths:</strong> <code>/acme</code> sees all branches; <code>/acme/northeast</code> sees only northeast clinics beneath it.<br>
+      <strong>Cache isolation:</strong> Cube.js appends <code>org_path</code> to the cache key so tenants never see each other's cached data.<br>
+      <strong>Audit trail:</strong> Every query logs user, <code>org_path</code>, and timestamp for compliance traceability.
+    </div>
+  </section>
+
+  <!-- Latency Tiers -->
+  <section id="tiers">
+    <div class="section-title fade-up">Latency Tiers</div>
+    <p class="fade-up" style="margin-bottom:20px;color:var(--text-sec)">
+      <span class="ac">Four data freshness tiers</span> mapped to report types, caching strategies, and infrastructure components.
+    </p>
+
+    <div class="tier-grid fade-up">
+      <div class="tier-card t0">
+        <div class="tier-label">T0 · Real-Time</div>
+        <div class="tier-latency">< 1 second</div>
+        <div class="tier-pattern">DuckDB local OLAP cache + BigQuery BI Engine (free 1 GB in-memory acceleration)</div>
+        <div class="tier-use">Live census dashboard, KPI cards</div>
+        <div class="tier-count">~15 reports</div>
+      </div>
+      <div class="tier-card t1">
+        <div class="tier-label">T1 · Near-Real-Time</div>
+        <div class="tier-latency">< 15 minutes</div>
+        <div class="tier-pattern">CDC pipeline → BigQuery → Cube.js pre-aggregations → Cube Store</div>
+        <div class="tier-use">Admission rates, visit completion, authorization utilization</div>
+        <div class="tier-count">~50 reports</div>
+      </div>
+      <div class="tier-card t2">
+        <div class="tier-label">T2 · Batch</div>
+        <div class="tier-latency">Daily / Monthly</div>
+        <div class="tier-pattern">BigQuery scheduled queries → Cube.js scheduled pre-aggregations → Export service</div>
+        <div class="tier-use">Billing AR aging, regulatory compliance, quality measures, month-end reports</div>
+        <div class="tier-count">~35 reports</div>
+      </div>
+      <div class="tier-card t3">
+        <div class="tier-label">T3 · Ad-Hoc / NLQ</div>
+        <div class="tier-latency">3 — 10 seconds</div>
+        <div class="tier-pattern">User question → LLM agent → Cube.js MCP tools (governed) or BigQuery NLQ (exploratory)</div>
+        <div class="tier-use">Cross-domain analysis, free-form questions, ad-hoc reporting</div>
+        <div class="tier-count">~14 reports + unlimited ad-hoc</div>
+      </div>
+    </div>
+
+    <p class="fade-up" style="margin-top:24px;margin-bottom:12px;color:var(--text-sec);font-size:14px;font-weight:600">Data Propagation Timeline</p>
+    <p class="fade-up" style="margin-bottom:16px;color:var(--text-dim);font-size:13px">How a single primary database write propagates through the tiers:</p>
+    <div class="timeline fade-up">
+      <div class="timeline-line"></div>
+      <div class="timeline-point" style="left:5%">
+        <div class="dot" style="background:var(--bi)"></div>
+        <div class="tp-label" style="color:var(--bi)">T3</div>
+        <div class="tp-time">0s (direct)</div>
+      </div>
+      <div class="timeline-point" style="left:28%">
+        <div class="dot" style="background:var(--semantic)"></div>
+        <div class="tp-label" style="color:var(--semantic)">T1</div>
+        <div class="tp-time">15 min (CDC)</div>
+      </div>
+      <div class="timeline-point" style="left:48%">
+        <div class="dot" style="background:var(--frontend)"></div>
+        <div class="tp-label" style="color:var(--frontend)">T0</div>
+        <div class="tp-time">15 min (Parquet)</div>
+      </div>
+      <div class="timeline-point" style="left:85%">
+        <div class="dot" style="background:var(--cache)"></div>
+        <div class="tp-label" style="color:var(--cache)">T2</div>
+        <div class="tp-time">24 hrs (batch)</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Embedded Dashboard Flow -->
+  <section id="embedding">
+    <div class="section-title fade-up">Embedded Dashboard Flow</div>
+    <p class="fade-up" style="margin-bottom:20px;color:var(--text-sec)">
+      SSO-gated embedding: <span class="hi">no separate Superset login</span>, RLS from JWT claims, seamless iframe integration.
+    </p>
+
+    <div class="seq-diagram fade-up">
+      <div class="seq-step">
+        <div class="seq-num">1</div>
+        <div class="seq-content">
+          <div class="seq-actor">User</div>
+          <div class="seq-desc">Logs into the application via <span class="hi">Okta OIDC</span> Authorization Code + PKCE flow</div>
+        </div>
+      </div>
+      <div class="seq-step">
+        <div class="seq-num">2</div>
+        <div class="seq-content">
+          <div class="seq-actor">User</div>
+          <div class="seq-desc">Navigates to the <span class="hi">Reports</span> page in the React frontend</div>
+        </div>
+      </div>
+      <div class="seq-step">
+        <div class="seq-num">3</div>
+        <div class="seq-content">
+          <div class="seq-actor">React Frontend</div>
+          <div class="seq-desc">Calls backend <code>POST /api/v1/reporting/superset-token</code> with the user's JWT bearer token</div>
+        </div>
+      </div>
+      <div class="seq-step">
+        <div class="seq-num">4</div>
+        <div class="seq-content">
+          <div class="seq-actor">Backend API</div>
+          <div class="seq-desc">Extracts org claims from JWT, calls Superset <code>POST /security/guest_token</code> with RLS rules: <code>organization_path LIKE '{org}%'</code></div>
+        </div>
+      </div>
+      <div class="seq-step">
+        <div class="seq-num">5</div>
+        <div class="seq-content">
+          <div class="seq-actor">React Frontend</div>
+          <div class="seq-desc">Renders dashboard using <code>embedDashboard()</code> from <code>@superset-ui/embedded-sdk</code> with the guest token</div>
+        </div>
+      </div>
+      <div class="seq-step">
+        <div class="seq-num">6</div>
+        <div class="seq-content">
+          <div class="seq-actor">Superset</div>
+          <div class="seq-desc">Serves the dashboard filtered by <code>organization_path</code> — <span class="ac">no separate login required</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Docker -->
+  <section id="docker">
+    <div class="section-title fade-up">Docker & Infrastructure</div>
+    <p class="fade-up" style="margin-bottom:20px;color:var(--text-sec)">
+      Custom Superset image build pipeline with domain-specific modules and entrypoint.
+    </p>
+
+    <div class="fade-up" style="margin:24px 0;overflow-x:auto">
+      <svg viewBox="0 0 600 400" style="width:100%;max-width:600px;margin:0 auto;display:block;font-family:Inter,system-ui,sans-serif" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="ah-dk" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#58a6ff"/></marker>
+          <linearGradient id="gd-cmd" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#1a365d"/><stop offset="100%" stop-color="#2a4a7f"/></linearGradient>
+          <linearGradient id="gd-base" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#22543d"/><stop offset="100%" stop-color="#276749"/></linearGradient>
+          <linearGradient id="gd-rt" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#234e52"/><stop offset="100%" stop-color="#285e61"/></linearGradient>
+        </defs>
+
+        <!-- Dashed container -->
+        <rect x="8" y="8" width="584" height="384" rx="12" fill="rgba(88,166,255,0.03)" stroke="rgba(88,166,255,0.15)" stroke-width="1.5" stroke-dasharray="8 4"/>
+        <text x="24" y="28" fill="#58a6ff" font-size="9" font-weight="700" letter-spacing="1.5" opacity="0.7">DOCKER BUILD PIPELINE</text>
+
+        <!-- Step 1: Build Command -->
+        <rect x="170" y="40" width="260" height="40" rx="8" fill="url(#gd-cmd)"/>
+        <text x="210" y="56" fill="#90cdf4" font-size="9" font-weight="700" letter-spacing="1">BUILD COMMAND</text>
+        <text x="210" y="70" fill="#bee3f8" font-size="11" font-family="JetBrains Mono,monospace">make reporting-build</text>
+        <text x="185" y="65" font-size="14">🔨</text>
+
+        <!-- Connector 1→2 -->
+        <line x1="300" y1="80" x2="300" y2="100" stroke="#58a6ff" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#ah-dk)"/>
+        <circle r="2" fill="#58a6ff" opacity="0.8"><animateMotion dur="1s" repeatCount="indefinite" path="M300,80 L300,100"/></circle>
+
+        <!-- Step 2: Docker Build -->
+        <rect x="120" y="105" width="360" height="40" rx="8" fill="#161b22" stroke="rgba(88,166,255,0.35)" stroke-width="1.2"/>
+        <text x="155" y="121" fill="#58a6ff" font-size="9" font-weight="700" letter-spacing="1">DOCKER BUILD</text>
+        <text x="155" y="135" fill="#495670" font-size="10" font-family="JetBrains Mono,monospace">docker build -t my-superset:local</text>
+        <text x="133" y="128" font-size="14">🐳</text>
+
+        <!-- Connector 2→3 -->
+        <line x1="300" y1="145" x2="300" y2="165" stroke="#58a6ff" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#ah-dk)"/>
+        <circle r="2" fill="#58a6ff" opacity="0.8"><animateMotion dur="1s" repeatCount="indefinite" path="M300,145 L300,165"/></circle>
+
+        <!-- Step 3: Base Image -->
+        <rect x="170" y="170" width="260" height="40" rx="8" fill="url(#gd-base)"/>
+        <text x="210" y="186" fill="#9ae6b4" font-size="9" font-weight="700" letter-spacing="1">BASE IMAGE</text>
+        <text x="210" y="200" fill="#c6f6d5" font-size="11" font-family="JetBrains Mono,monospace">apache/superset:4.1.1</text>
+        <text x="185" y="195" font-size="14">📦</text>
+
+        <!-- Fork into packages and files -->
+        <path d="M240,210 C240,230 170,240 170,255" fill="none" stroke="#3fb950" stroke-width="1.2" stroke-dasharray="4 3" id="dk-pkg"/>
+        <path d="M360,210 C360,230 430,240 430,255" fill="none" stroke="#bc8cff" stroke-width="1.2" stroke-dasharray="4 3" id="dk-file"/>
+        <circle r="2" fill="#3fb950" opacity="0.8"><animateMotion dur="1.5s" repeatCount="indefinite"><mpath href="#dk-pkg"/></animateMotion></circle>
+        <circle r="2" fill="#bc8cff" opacity="0.8"><animateMotion dur="1.5s" repeatCount="indefinite"><mpath href="#dk-file"/></animateMotion></circle>
+
+        <!-- Step 4a: Packages -->
+        <rect x="40" y="255" width="250" height="70" rx="8" fill="#161b22" stroke="rgba(63,185,80,0.35)" stroke-width="1.2"/>
+        <text x="55" y="273" fill="#3fb950" font-size="9" font-weight="700" letter-spacing="1">PIP PACKAGES</text>
+        <rect x="55" y="280" width="90" height="18" rx="4" fill="rgba(63,185,80,0.1)" stroke="rgba(63,185,80,0.3)" stroke-width="0.8"/>
+        <text x="62" y="293" fill="#3fb950" font-size="9" font-family="JetBrains Mono,monospace">psycopg2</text>
+        <rect x="152" y="280" width="70" height="18" rx="4" fill="rgba(63,185,80,0.1)" stroke="rgba(63,185,80,0.3)" stroke-width="0.8"/>
+        <text x="159" y="293" fill="#3fb950" font-size="9" font-family="JetBrains Mono,monospace">flask-cors</text>
+        <rect x="55" y="302" width="85" height="18" rx="4" fill="rgba(63,185,80,0.1)" stroke="rgba(63,185,80,0.3)" stroke-width="0.8"/>
+        <text x="62" y="315" fill="#3fb950" font-size="9" font-family="JetBrains Mono,monospace">duckdb-engine</text>
+        <rect x="147" y="302" width="130" height="18" rx="4" fill="rgba(63,185,80,0.1)" stroke="rgba(63,185,80,0.3)" stroke-width="0.8"/>
+        <text x="154" y="315" fill="#3fb950" font-size="9" font-family="JetBrains Mono,monospace">sqlalchemy-bigquery</text>
+
+        <!-- Step 4b: Custom Files -->
+        <rect x="310" y="255" width="250" height="70" rx="8" fill="#161b22" stroke="rgba(188,140,255,0.35)" stroke-width="1.2"/>
+        <text x="325" y="273" fill="#bc8cff" font-size="9" font-weight="700" letter-spacing="1">CUSTOM FILES</text>
+        <rect x="325" y="280" width="110" height="18" rx="4" fill="rgba(188,140,255,0.1)" stroke="rgba(188,140,255,0.3)" stroke-width="0.8"/>
+        <text x="332" y="293" fill="#bc8cff" font-size="9" font-family="JetBrains Mono,monospace">superset_config.py</text>
+        <rect x="442" y="280" width="105" height="18" rx="4" fill="rgba(188,140,255,0.1)" stroke="rgba(188,140,255,0.3)" stroke-width="0.8"/>
+        <text x="449" y="293" fill="#bc8cff" font-size="9" font-family="JetBrains Mono,monospace">tenant_security.py</text>
+        <rect x="325" y="302" width="85" height="18" rx="4" fill="rgba(188,140,255,0.1)" stroke="rgba(188,140,255,0.3)" stroke-width="0.8"/>
+        <text x="332" y="315" fill="#bc8cff" font-size="9" font-family="JetBrains Mono,monospace">bootstrap.sh</text>
+
+        <!-- Join into Runtime -->
+        <path d="M165,325 C165,345 240,355 300,355" fill="none" stroke="#39d2c0" stroke-width="1.2" stroke-dasharray="4 3"/>
+        <path d="M435,325 C435,345 360,355 300,355" fill="none" stroke="#39d2c0" stroke-width="1.2" stroke-dasharray="4 3"/>
+
+        <!-- Step 5: Runtime -->
+        <rect x="140" y="345" width="320" height="40" rx="8" fill="url(#gd-rt)"/>
+        <text x="180" y="361" fill="#b2f5ea" font-size="9" font-weight="700" letter-spacing="1">RUNTIME</text>
+        <text x="180" y="376" fill="#e6fffa" font-size="10" font-family="JetBrains Mono,monospace">bootstrap.sh → migrations → startup</text>
+        <text x="155" y="370" font-size="14">🚀</text>
+      </svg>
+    </div>
+  </section>
+
+  <!-- Cost -->
+  <section id="cost">
+    <div class="section-title fade-up">Cost Comparison</div>
+    <p class="fade-up" style="margin-bottom:20px;color:var(--text-sec)">
+      Full-featured analytics at a <span class="ac">fraction of proprietary pricing</span>.
+    </p>
+
+    <div class="cost-bars fade-up">
+      <div class="cost-row">
+        <div class="cost-label">OSS Stack</div>
+        <div class="cost-track">
+          <div class="cost-bar-fill oss" data-width="3"><span>$300-900/mo</span></div>
+        </div>
+      </div>
+      <div class="cost-row">
+        <div class="cost-label">Metabase Pro</div>
+        <div class="cost-track">
+          <div class="cost-bar-fill metabase" data-width="2"><span>$575/mo</span></div>
+        </div>
+      </div>
+      <div class="cost-row">
+        <div class="cost-label">Tableau Online</div>
+        <div class="cost-track">
+          <div class="cost-bar-fill tableau" data-width="23"><span>$70/user/mo</span></div>
+        </div>
+      </div>
+      <div class="cost-row">
+        <div class="cost-label">Looker</div>
+        <div class="cost-track">
+          <div class="cost-bar-fill looker" data-width="100"><span>$10-30k/mo</span></div>
+        </div>
+      </div>
+    </div>
+
+    <table class="comp-table fade-up">
+      <thead>
+        <tr><th>Stack</th><th>Monthly Cost</th><th>Key Limitation</th></tr>
+      </thead>
+      <tbody>
+        <tr class="highlight"><td>OSS Stack</td><td>$300 — $900</td><td>None (full feature set)</td></tr>
+        <tr><td>Looker</td><td>$10,000 — $30,000</td><td>Minimum annual contract, vendor lock-in</td></tr>
+        <tr><td>Metabase Pro</td><td>$575</td><td>Missing RLS, SAML SSO, embedded analytics</td></tr>
+        <tr><td>Tableau Online</td><td>$70 / user</td><td>Per-seat pricing scales poorly</td></tr>
+      </tbody>
+    </table>
+
+    <p class="fade-up" style="margin-top:24px;margin-bottom:12px;color:var(--text-sec);font-size:14px;font-weight:600">OSS Stack Breakdown</p>
+
+    <table class="comp-table fade-up">
+      <thead>
+        <tr><th>Component</th><th>Cost</th><th>Note</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Apache Superset</td><td>$0</td><td>Apache 2.0 license</td></tr>
+        <tr><td>Cube.js</td><td>$0</td><td>MIT license (self-hosted)</td></tr>
+        <tr><td>DuckDB</td><td>$0</td><td>MIT license</td></tr>
+        <tr><td>BigQuery</td><td>~$100-500</td><td>Query + storage costs</td></tr>
+        <tr><td>GKE (2 pods)</td><td>~$200-400</td><td>Compute for Cube.js + Superset</td></tr>
+        <tr><td>Okta SSO</td><td>$6-17/user</td><td>Already provisioned for the application</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</div>
+
+<div class="footer">
+  <a href="../">← Back to portfolio</a> · Anvesh Jarabani · July 2026
+</div>
+
+<script>
+// Spotlight
+const sp = document.getElementById('spotlight');
+document.addEventListener('mousemove', e => {
+  sp.style.background = `radial-gradient(600px at ${e.clientX}px ${e.clientY}px, rgba(29,78,216,0.06), transparent 80%)`;
+});
+
+// Fade-in
+const fadeObs = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); fadeObs.unobserve(e.target); } });
+}, { threshold: 0.1 });
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+window.scrollTo(0, 0);
+document.querySelectorAll('.fade-up').forEach(el => {
+  if (el.getBoundingClientRect().top < window.innerHeight) { el.classList.add('visible'); }
+  else { el.style.opacity = '0'; fadeObs.observe(el); }
+});
+
+// Scroll-spy
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('.top-bar nav a');
+const spyObs = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      navLinks.forEach(l => l.classList.remove('active'));
+      const link = document.querySelector(`.top-bar nav a[href="#${e.target.id}"]`);
+      if (link) link.classList.add('active');
+    }
+  });
+}, { rootMargin: '-30% 0px -70% 0px' });
+sections.forEach(s => spyObs.observe(s));
+
+// Smooth scroll for nav clicks
+document.querySelectorAll(".top-bar nav a[href^=\"#\"]").forEach(function(a){
+  a.addEventListener("click",function(e){
+    e.preventDefault();
+    var t=document.querySelector(this.getAttribute("href"));
+    if(t)t.scrollIntoView({behavior:"smooth",block:"start"});
+    history.pushState(null,"",this.getAttribute("href"));
+  });
+});
+
+// Animated cost bars
+const costObs = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      const bars = e.target.querySelectorAll('.cost-bar-fill');
+      bars.forEach((bar, i) => {
+        setTimeout(() => { bar.style.width = bar.dataset.width + '%'; }, i * 150);
+      });
+      costObs.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.3 });
+const costContainer = document.querySelector('.cost-bars');
+if (costContainer) costObs.observe(costContainer);
+
+// Staggered card reveal
+const cardObs = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      const cards = e.target.querySelectorAll('.card, .cube-card, .rls-card, .tier-card, .seq-step, .fan-item, .docker-node');
+      cards.forEach((c, i) => {
+        c.style.opacity = '0';
+        c.style.transform = 'translateY(12px)';
+        c.style.transition = 'opacity .4s ease, transform .4s ease';
+        setTimeout(() => { c.style.opacity = '1'; c.style.transform = 'translateY(0)'; }, i * 80);
+      });
+      cardObs.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.1 });
+document.querySelectorAll('.card-grid, .cube-grid, .rls-stack, .tier-grid, .seq-diagram, .fan-row, .docker-flow').forEach(el => cardObs.observe(el));
+</script>
+</body>
+</html>

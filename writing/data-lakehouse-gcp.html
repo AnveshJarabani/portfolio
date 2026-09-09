@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data Lakehouse on GCP — Anvesh Jarabani</title>
+<script>if("scrollRestoration" in history)history.scrollRestoration="manual";if(location.hash)history.replaceState(null,"",location.pathname);window.addEventListener("DOMContentLoaded",function(){window.scrollTo(0,0)});window.addEventListener("load",function(){window.scrollTo(0,0)});</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a192f;--bg-light:#112240;--border:#233554;
+  --text:#ccd6f6;--text-sec:#a8b2d1;--text-dim:#495670;
+  --accent:#64ffda;--accent-dim:rgba(100,255,218,0.1);
+  --white:#e6f1ff;
+  --red:#f85149;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--gold:#d29922;--teal:#39d2c0;
+  --bronze:#cd7f32;--silver:#c0c0c0;--gold-medal:#ffd700;
+}
+::selection{background:rgba(100,255,218,0.2)}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;font-size:15px}
+a{color:var(--accent);text-decoration:none;transition:opacity .2s}
+a:hover{opacity:.8}
+code,.mono{font-family:'JetBrains Mono',monospace;font-size:13px;background:rgba(100,255,218,0.07);padding:2px 6px;border-radius:4px;color:var(--accent)}
+pre{background:var(--bg-light);border:1px solid var(--border);border-radius:8px;padding:20px;overflow-x:auto;margin:16px 0;line-height:1.5}
+pre code{background:none;padding:0;font-size:13px;color:var(--text)}
+
+/* Layout */
+.top-bar{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(10,25,47,0.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between}
+.top-bar .back{font-size:13px;color:var(--text-sec);display:flex;align-items:center;gap:6px}
+.top-bar .back:hover{color:var(--accent)}
+.top-bar nav{display:flex;gap:20px}
+.top-bar nav a{font-size:12px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-dim);transition:color .2s}
+.top-bar nav a.active{color:var(--accent)}
+.top-bar nav a:hover{color:var(--text-sec);opacity:1}
+
+.container{max-width:900px;margin:0 auto;padding:92px 24px 60px}
+.hero-title{font-size:clamp(28px,4vw,40px);font-weight:800;color:var(--white);margin-bottom:8px;letter-spacing:-0.5px}
+.hero-sub{font-size:16px;color:var(--text-sec);margin-bottom:8px}
+.hero-meta{font-size:13px;color:var(--text-dim);margin-bottom:40px;display:flex;gap:16px;flex-wrap:wrap}
+
+section{padding:48px 0;border-bottom:1px solid var(--border)}
+section:last-of-type{border-bottom:none}
+.section-title{font-size:13px;text-transform:uppercase;letter-spacing:2px;color:var(--accent);margin-bottom:24px;font-weight:600}
+p.body{color:var(--text-sec);margin-bottom:16px;line-height:1.7}
+h3.sub-heading{font-size:16px;font-weight:700;color:var(--white);margin:28px 0 12px}
+
+/* Fade-in */
+.fade-up{transform:translateY(16px);transition:opacity .5s ease,transform .5s ease}
+.fade-up.visible{opacity:1;transform:translateY(0)}
+.hi{color:var(--white);font-weight:600}
+.ac{color:var(--accent);font-weight:700}
+
+/* Card grids */
+.card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin:20px 0}
+.card{background:var(--bg-light);border:1px solid var(--border);border-radius:8px;padding:20px;transition:all .25s}
+.card:hover{border-color:var(--text-dim);box-shadow:0 4px 20px rgba(0,0,0,0.2)}
+.card .card-title{font-size:14px;font-weight:600;color:var(--white);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.card p,.card li{font-size:13px;color:var(--text-sec);line-height:1.6}
+.card ul{list-style:none;padding:0;margin-top:8px}
+.card li{padding:3px 0}
+.card li::before{content:"\2192 ";color:var(--accent);font-size:12px}
+
+/* Format cards (with colored top border) */
+.format-card{background:var(--bg-light);border:1px solid var(--border);border-radius:8px;padding:20px;transition:all .25s;border-top:3px solid var(--border)}
+.format-card:hover{box-shadow:0 4px 20px rgba(0,0,0,0.2)}
+.format-card .format-origin{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-dim);margin-bottom:4px}
+.format-card .format-name{font-size:16px;font-weight:700;color:var(--white);margin-bottom:8px}
+.format-card .format-desc{font-size:13px;color:var(--text-sec);line-height:1.6;margin-bottom:12px}
+.format-card .format-features{list-style:none;padding:0}
+.format-card .format-features li{padding:3px 0;font-size:12px;color:var(--text-sec)}
+.format-card .format-features li::before{content:"\2192 ";color:var(--accent);font-size:12px}
+.format-card.delta{border-top-color:var(--blue)}
+.format-card.delta .format-name{color:var(--blue)}
+.format-card.iceberg{border-top-color:var(--teal)}
+.format-card.iceberg .format-name{color:var(--teal)}
+.format-card.hudi{border-top-color:var(--gold)}
+.format-card.hudi .format-name{color:var(--gold)}
+
+/* Comparison table */
+.cmp-table{width:100%;border-collapse:collapse;margin:20px 0;font-size:13px}
+.cmp-table th{text-align:left;padding:10px 14px;border-bottom:2px solid var(--border);color:var(--text-dim);font-size:11px;text-transform:uppercase;letter-spacing:1px;font-weight:600}
+.cmp-table td{padding:10px 14px;border-bottom:1px solid var(--border);color:var(--text-sec)}
+.cmp-table tr:hover td{background:var(--accent-dim)}
+.cmp-table .check{color:var(--accent);font-weight:700}
+.cmp-table .partial{color:var(--gold);font-weight:600}
+.cmp-table .no{color:var(--text-dim)}
+
+/* GCP cards */
+.gcp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin:20px 0}
+.gcp-card{background:var(--bg-light);border:1px solid var(--border);border-radius:8px;padding:20px;transition:all .25s}
+.gcp-card:hover{border-color:var(--blue);box-shadow:0 0 20px rgba(88,166,255,0.08)}
+.gcp-card .gcp-name{font-size:15px;font-weight:600;color:var(--blue);margin-bottom:6px}
+.gcp-card .gcp-desc{font-size:13px;color:var(--text-sec);line-height:1.6}
+
+/* SVG diagrams are self-contained; no external CSS needed */
+
+/* Performance cards */
+.perf-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin:20px 0}
+.perf-card{background:var(--bg-light);border:1px solid var(--border);border-radius:8px;padding:20px;transition:all .25s}
+.perf-card:hover{border-color:var(--teal);box-shadow:0 0 20px rgba(57,210,192,0.08)}
+.perf-card .perf-name{font-size:14px;font-weight:600;color:var(--teal);margin-bottom:6px}
+.perf-card .perf-what{font-size:12px;color:var(--text-dim);font-style:italic;margin-bottom:8px}
+.perf-card .perf-desc{font-size:13px;color:var(--text-sec);line-height:1.6}
+
+/* Schema evolution table */
+.schema-table{width:100%;border-collapse:collapse;margin:20px 0;font-size:13px}
+.schema-table th{text-align:left;padding:10px 14px;border-bottom:2px solid var(--border);color:var(--text-dim);font-size:11px;text-transform:uppercase;letter-spacing:1px;font-weight:600}
+.schema-table td{padding:10px 14px;border-bottom:1px solid var(--border);color:var(--text-sec)}
+.schema-table tr:hover td{background:var(--accent-dim)}
+.schema-table .yes{color:var(--accent);font-weight:600}
+.schema-table .limited{color:var(--gold);font-weight:600}
+.schema-table .nope{color:var(--text-dim)}
+
+/* Ops timeline */
+.ops-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin:20px 0}
+.ops-card{background:var(--bg-light);border:1px solid var(--border);border-radius:8px;padding:20px;transition:all .25s}
+.ops-card:hover{border-color:var(--purple);box-shadow:0 0 20px rgba(188,140,255,0.08)}
+.ops-card .ops-name{font-size:14px;font-weight:600;color:var(--purple);margin-bottom:6px}
+.ops-card .ops-desc{font-size:13px;color:var(--text-sec);line-height:1.6;margin-bottom:8px}
+.ops-card ul{list-style:none;padding:0}
+.ops-card li{padding:3px 0;font-size:12px;color:var(--text-sec)}
+.ops-card li::before{content:"\2192 ";color:var(--purple);font-size:12px}
+
+/* Callout */
+.callout{background:var(--accent-dim);border:1px solid rgba(100,255,218,0.15);border-radius:8px;padding:16px 20px;margin:20px 0;font-size:13px;color:var(--text-sec);line-height:1.6}
+.callout strong{color:var(--accent)}
+.callout.warn{background:rgba(248,81,73,0.06);border-color:rgba(248,81,73,0.15)}
+.callout.warn strong{color:var(--red)}
+
+/* Key metrics */
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:24px 0}
+.metric-card{background:var(--accent-dim);border:1px solid rgba(100,255,218,0.15);border-radius:8px;padding:16px;text-align:center}
+.metric-card .m-num{font-size:28px;font-weight:800;color:var(--accent)}
+.metric-card .m-label{font-size:11px;color:var(--text-dim);margin-top:4px}
+
+/* Spotlight & Footer */
+#spotlight{position:fixed;inset:0;z-index:0;pointer-events:none;transition:background .15s}
+.container,.top-bar{position:relative;z-index:1}
+.footer{text-align:center;padding:40px 24px;font-size:12px;color:var(--text-dim)}
+.footer a{color:var(--text-sec)}.footer a:hover{color:var(--accent)}
+
+/* Mobile */
+@media(max-width:700px){
+  .top-bar nav{display:none}
+  /* SVG diagrams handle responsive via viewBox */
+  .card-grid,.gcp-grid,.perf-grid,.ops-grid{grid-template-columns:1fr}
+  .cmp-table,.schema-table{font-size:11px}
+  .cmp-table th,.cmp-table td,.schema-table th,.schema-table td{padding:8px 8px}
+  .metrics{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+
+<div id="spotlight"></div>
+
+<div class="top-bar">
+  <a href="../" class="back">&larr; anveshjarabani.com</a>
+  <nav>
+    <a href="#overview">Overview</a>
+    <a href="#formats">Formats</a>
+    <a href="#gcp">GCP</a>
+    <a href="#medallion">Medallion</a>
+    <a href="#performance">Performance</a>
+    <a href="#schema">Schema</a>
+    <a href="#operations">Operations</a>
+  </nav>
+</div>
+
+<div class="container">
+
+  <div class="fade-up">
+    <h1 class="hero-title">Data Lakehouse on GCP</h1>
+    <p class="hero-sub">Implementing the lakehouse paradigm with Delta Lake, Iceberg, BigLake, and BigQuery &mdash; warehouse reliability meets data lake flexibility on Google Cloud.</p>
+    <div class="hero-meta">
+      <span>Anvesh Jarabani</span>
+      <span>&middot;</span>
+      <span>July 2026</span>
+      <span>&middot;</span>
+      <span>13 min read</span>
+    </div>
+  </div>
+
+  <!-- Overview -->
+  <section id="overview">
+    <div class="section-title fade-up">Overview</div>
+    <p class="body fade-up">
+      For years, organizations chose between two paradigms. <span class="hi">Data warehouses</span> provided ACID transactions, schema enforcement, and fast SQL &mdash; but locked data into proprietary formats with rigid schemas and high storage costs. <span class="hi">Data lakes</span> offered cheap object storage, open file formats, and schema flexibility &mdash; but lacked transactional guarantees, suffered from the "data swamp" problem, and required glue code to handle consistency.
+    </p>
+    <p class="body fade-up">
+      The <span class="ac">data lakehouse</span> combines both. It layers warehouse-grade reliability &mdash; ACID transactions, schema enforcement, time travel, fine-grained access control &mdash; directly on top of open file formats stored in object storage. No data duplication between lake and warehouse. No ETL pipeline copying Parquet files into a proprietary engine. One copy of the data, multiple consumption patterns.
+    </p>
+
+    <div class="metrics fade-up">
+      <div class="metric-card">
+        <div class="m-num">ACID</div>
+        <div class="m-label">transactions on object storage</div>
+      </div>
+      <div class="metric-card">
+        <div class="m-num">Open</div>
+        <div class="m-label">formats (Parquet, Avro, ORC)</div>
+      </div>
+      <div class="metric-card">
+        <div class="m-num">SQL</div>
+        <div class="m-label">+ ML + streaming on same data</div>
+      </div>
+      <div class="metric-card">
+        <div class="m-num">1x</div>
+        <div class="m-label">single copy of truth</div>
+      </div>
+    </div>
+
+    <p class="body fade-up">
+      The key enabler is the <span class="hi">open table format</span> &mdash; a metadata layer that sits between the query engine and the raw files. Delta Lake, Apache Iceberg, and Apache Hudi each implement this differently, but they share the same goal: make a collection of Parquet files in GCS (or S3) behave like a database table with <span class="ac">transactions, schema enforcement, and time travel</span>.
+    </p>
+
+    <div class="callout fade-up">
+      <strong>Why not just use BigQuery?</strong> BigQuery is excellent for SQL analytics, but it uses a proprietary storage format. A lakehouse stores data in open formats on GCS, giving you engine portability &mdash; query with BigQuery, Spark, Trino, Flink, or Presto without moving data. BigQuery now supports this model natively via <strong>BigQuery managed tables for Iceberg</strong>, bridging the gap.
+    </div>
+  </section>
+
+  <!-- Table Formats -->
+  <section id="formats">
+    <div class="section-title fade-up">Table Formats</div>
+    <p class="body fade-up">
+      Three open table formats dominate the lakehouse landscape. Each originated at a different company to solve a specific problem, and each takes a different architectural approach to metadata management, partitioning, and transaction isolation.
+    </p>
+
+    <div class="card-grid fade-up" style="grid-template-columns:repeat(auto-fit,minmax(250px,1fr))">
+      <div class="format-card delta">
+        <div class="format-origin">Databricks</div>
+        <div class="format-name">Delta Lake</div>
+        <div class="format-desc">Uses a JSON-based <code>_delta_log</code> transaction log stored alongside data files. Each commit appends a new JSON file; periodic checkpoints compact the log into Parquet for fast reads.</div>
+        <ul class="format-features">
+          <li>ACID via optimistic concurrency on the transaction log</li>
+          <li>Time travel &mdash; query any historical version by log replay</li>
+          <li><code>MERGE INTO</code> for upserts (insert/update/delete in one statement)</li>
+          <li>Z-ordering to co-locate related data and reduce scan ranges</li>
+          <li><code>VACUUM</code> to garbage-collect old data files</li>
+          <li>Deep Spark integration; growing Flink/Trino support</li>
+        </ul>
+      </div>
+
+      <div class="format-card iceberg">
+        <div class="format-origin">Netflix</div>
+        <div class="format-name">Apache Iceberg</div>
+        <div class="format-desc">Three-level metadata hierarchy: metadata files, manifest lists, and manifest files. Tracks individual data files with column-level statistics for surgical pruning.</div>
+        <ul class="format-features">
+          <li>Hidden partitioning &mdash; users query by value, Iceberg handles the physical layout</li>
+          <li>Partition evolution &mdash; change partitioning without rewriting data</li>
+          <li>Full schema evolution (add, rename, reorder, drop columns)</li>
+          <li>Snapshot isolation with branching and tagging</li>
+          <li>Engine-agnostic: Spark, Trino, Flink, Presto, Dremio, StarRocks</li>
+          <li>Strongest community momentum as of 2026</li>
+        </ul>
+      </div>
+
+      <div class="format-card hudi">
+        <div class="format-origin">Uber</div>
+        <div class="format-name">Apache Hudi</div>
+        <div class="format-desc">Designed for streaming upserts. Offers two storage layouts: Copy-on-Write (CoW) for read-heavy workloads and Merge-on-Read (MoR) for write-heavy workloads with incremental processing.</div>
+        <ul class="format-features">
+          <li>Record-level indexing for fast upserts at scale</li>
+          <li>Incremental queries &mdash; process only changed records since last read</li>
+          <li>CoW: full file rewrite on update (fast reads, slower writes)</li>
+          <li>MoR: delta log + base file (fast writes, merge on read)</li>
+          <li>Built-in compaction, clustering, and cleaning services</li>
+          <li>Strong for CDC ingestion and near-real-time pipelines</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3 class="sub-heading fade-up">Feature Comparison</h3>
+
+    <div style="overflow-x:auto">
+    <table class="cmp-table fade-up">
+      <thead>
+        <tr>
+          <th>Capability</th>
+          <th>Delta Lake</th>
+          <th>Apache Iceberg</th>
+          <th>Apache Hudi</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>ACID Transactions</td>
+          <td class="check">Yes (OCC)</td>
+          <td class="check">Yes (snapshot)</td>
+          <td class="check">Yes (timeline)</td>
+        </tr>
+        <tr>
+          <td>Time Travel</td>
+          <td class="check">Yes &mdash; version-based</td>
+          <td class="check">Yes &mdash; snapshot-based</td>
+          <td class="check">Yes &mdash; instant-based</td>
+        </tr>
+        <tr>
+          <td>Schema Evolution</td>
+          <td class="partial">Add/overwrite</td>
+          <td class="check">Full (add, rename, reorder, drop)</td>
+          <td class="partial">Add/limited rename</td>
+        </tr>
+        <tr>
+          <td>Partition Evolution</td>
+          <td class="no">No &mdash; requires rewrite</td>
+          <td class="check">Yes &mdash; in-place, no rewrite</td>
+          <td class="no">No &mdash; requires rewrite</td>
+        </tr>
+        <tr>
+          <td>Hidden Partitioning</td>
+          <td class="no">No</td>
+          <td class="check">Yes &mdash; transparent transforms</td>
+          <td class="no">No</td>
+        </tr>
+        <tr>
+          <td>Merge / Upsert</td>
+          <td class="check">MERGE INTO</td>
+          <td class="check">Merge-on-read (v2)</td>
+          <td class="check">Native (CoW + MoR)</td>
+        </tr>
+        <tr>
+          <td>Incremental Reads</td>
+          <td class="partial">CDF (Change Data Feed)</td>
+          <td class="partial">Incremental scan</td>
+          <td class="check">Native incremental queries</td>
+        </tr>
+        <tr>
+          <td>Engine Support</td>
+          <td class="partial">Spark-native; growing</td>
+          <td class="check">Broadest (Spark, Trino, Flink, ...)</td>
+          <td class="partial">Spark, Flink; growing</td>
+        </tr>
+        <tr>
+          <td>BigQuery Integration</td>
+          <td class="partial">External tables (read)</td>
+          <td class="check">Managed tables + BigLake</td>
+          <td class="partial">External tables (read)</td>
+        </tr>
+        <tr>
+          <td>Community Momentum</td>
+          <td class="check">Strong (Databricks)</td>
+          <td class="check">Strongest (multi-vendor)</td>
+          <td class="partial">Moderate</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+
+    <div class="callout fade-up">
+      <strong>Convergence trend:</strong> The table format landscape is converging. Delta Lake adopted Iceberg compatibility (UniForm), Iceberg is gaining Spark-native improvements, and all three now support each other's data files to varying degrees. For new GCP projects in 2026, <strong>Iceberg is the default choice</strong> due to BigQuery's native managed table support and the broadest engine compatibility.
+    </div>
+  </section>
+
+  <!-- GCP Implementation -->
+  <section id="gcp">
+    <div class="section-title fade-up">GCP Implementation</div>
+    <p class="body fade-up">
+      Building a lakehouse on Google Cloud means composing managed services that each handle one layer of the stack. The architecture separates <span class="hi">storage</span> (GCS + open formats), <span class="hi">metadata</span> (BigLake metastore), <span class="hi">compute</span> (BigQuery + Dataproc), and <span class="hi">governance</span> (IAM + column/row-level security).
+    </p>
+
+    <div class="gcp-grid fade-up">
+      <div class="gcp-card">
+        <div class="gcp-name">BigLake</div>
+        <div class="gcp-desc">Unified storage API that sits between query engines and GCS. Provides a single metastore for Iceberg/Delta/Hudi tables with fine-grained access control, eliminating direct GCS permissions.</div>
+      </div>
+      <div class="gcp-card">
+        <div class="gcp-name">BigQuery External Tables</div>
+        <div class="gcp-desc">Query Parquet, Delta Lake, and Iceberg data directly in GCS without loading it into BigQuery's managed storage. Pay only for bytes scanned. Ideal for ad-hoc exploration.</div>
+      </div>
+      <div class="gcp-card">
+        <div class="gcp-name">BigQuery Managed Tables</div>
+        <div class="gcp-desc">Native Iceberg support &mdash; BigQuery creates and maintains Iceberg metadata on your GCS data. Write via BigQuery SQL, read from any Iceberg-compatible engine. Best of both worlds.</div>
+      </div>
+      <div class="gcp-card">
+        <div class="gcp-name">Dataproc (Managed Spark)</div>
+        <div class="gcp-desc">Fully managed Spark clusters for heavy ETL, ML training, and complex transformations. Supports Delta Lake, Iceberg, and Hudi connectors natively. Autoscaling worker pools.</div>
+      </div>
+      <div class="gcp-card">
+        <div class="gcp-name">Dataproc Serverless</div>
+        <div class="gcp-desc">Pay-per-query Spark with zero cluster management. Submit PySpark or SparkSQL jobs; infrastructure scales automatically. Ideal for scheduled batch jobs and intermittent workloads.</div>
+      </div>
+      <div class="gcp-card">
+        <div class="gcp-name">Cloud Storage (GCS)</div>
+        <div class="gcp-desc">The foundation layer. All lakehouse data lives as Parquet files in GCS buckets with lifecycle policies, versioning, and cross-region replication. Storage costs start at $0.02/GB/mo.</div>
+      </div>
+    </div>
+
+    <h3 class="sub-heading fade-up">Reference Architecture</h3>
+
+    <div class="fade-up" style="margin:24px 0;overflow-x:auto">
+      <svg viewBox="0 0 900 340" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:900px;display:block;margin:0 auto" font-family="'Inter',system-ui,sans-serif">
+        <defs>
+          <marker id="ah-arch-1" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#f85149"/></marker>
+          <marker id="ah-arch-2" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#58a6ff"/></marker>
+          <marker id="ah-arch-3" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#3fb950"/></marker>
+          <marker id="ah-arch-4" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#39d2c0"/></marker>
+        </defs>
+
+        <!-- Layer 1: Sources -->
+        <rect x="20" y="10" width="170" height="60" rx="10" fill="#161b22" stroke="rgba(248,81,73,0.4)" stroke-width="1.2"/>
+        <circle cx="40" cy="40" r="10" fill="#0a192f" stroke="#f85149" stroke-width="1.2"/>
+        <text x="40" y="43" fill="#f85149" font-size="9" font-weight="700" text-anchor="middle">1</text>
+        <text x="60" y="35" fill="#f85149" font-size="13" font-weight="600">Sources</text>
+        <text x="60" y="50" fill="#495670" font-size="10" font-family="'JetBrains Mono',monospace">Databases, APIs, Events, Files</text>
+
+        <!-- Arrow 1: Ingest -->
+        <path id="arch-p1" d="M190,40 L270,40" fill="none" stroke="#f85149" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-arch-1)"/>
+        <circle r="2.5" fill="#f85149" opacity="0.8"><animateMotion dur="1.8s" repeatCount="indefinite"><mpath href="#arch-p1"/></animateMotion></circle>
+        <text x="230" y="30" fill="#495670" font-size="9" text-anchor="middle" text-transform="uppercase" letter-spacing="1">INGEST</text>
+
+        <!-- Layer 2: Lakehouse (dashed container) -->
+        <rect x="270" y="0" width="330" height="130" rx="12" fill="rgba(88,166,255,0.04)" stroke="rgba(88,166,255,0.15)" stroke-width="1.5" stroke-dasharray="8 4"/>
+        <text x="435" y="18" fill="rgba(88,166,255,0.4)" font-size="9" text-anchor="middle" letter-spacing="1.5" text-transform="uppercase">LAKEHOUSE LAYER</text>
+
+        <!-- GCS + Iceberg box -->
+        <rect x="285" y="30" width="150" height="55" rx="10" fill="#161b22" stroke="rgba(205,127,50,0.4)" stroke-width="1.2"/>
+        <text x="360" y="52" fill="#cd7f32" font-size="12" font-weight="600" text-anchor="middle">GCS + Iceberg</text>
+        <text x="360" y="72" fill="#495670" font-size="10" font-family="'JetBrains Mono',monospace" text-anchor="middle">Open format lakehouse</text>
+
+        <!-- BigLake Metastore box -->
+        <rect x="450" y="30" width="140" height="55" rx="10" fill="#161b22" stroke="rgba(88,166,255,0.4)" stroke-width="1.2"/>
+        <text x="520" y="52" fill="#58a6ff" font-size="12" font-weight="600" text-anchor="middle">BigLake Metastore</text>
+        <text x="520" y="72" fill="#495670" font-size="10" font-family="'JetBrains Mono',monospace" text-anchor="middle">Catalog &amp; access ctrl</text>
+
+        <!-- Connection between GCS and BigLake (bidirectional dashed) -->
+        <line x1="435" y1="57" x2="450" y2="57" stroke="rgba(88,166,255,0.3)" stroke-width="1" stroke-dasharray="3 2"/>
+
+        <!-- Governance badge -->
+        <rect x="310" y="95" width="255" height="24" rx="6" fill="rgba(188,140,255,0.06)" stroke="rgba(188,140,255,0.2)" stroke-width="1"/>
+        <text x="437" y="111" fill="#bc8cff" font-size="9" text-anchor="middle" letter-spacing="0.5">IAM + Column/Row-Level Security</text>
+
+        <!-- Arrow 2: Query -->
+        <path id="arch-p2" d="M600,57 L680,57" fill="none" stroke="#58a6ff" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-arch-2)"/>
+        <circle r="2.5" fill="#58a6ff" opacity="0.8"><animateMotion dur="1.8s" repeatCount="indefinite"><mpath href="#arch-p2"/></animateMotion></circle>
+        <text x="640" y="47" fill="#495670" font-size="9" text-anchor="middle" letter-spacing="1">QUERY</text>
+
+        <!-- Layer 3: Compute (dashed container) -->
+        <rect x="680" y="0" width="200" height="130" rx="12" fill="rgba(63,185,80,0.04)" stroke="rgba(63,185,80,0.15)" stroke-width="1.5" stroke-dasharray="8 4"/>
+        <text x="780" y="18" fill="rgba(63,185,80,0.4)" font-size="9" text-anchor="middle" letter-spacing="1.5" text-transform="uppercase">COMPUTE</text>
+
+        <!-- BigQuery box -->
+        <rect x="695" y="28" width="170" height="30" rx="8" fill="#161b22" stroke="rgba(63,185,80,0.4)" stroke-width="1.2"/>
+        <text x="780" y="48" fill="#3fb950" font-size="11" font-weight="600" text-anchor="middle">BigQuery  SQL Analytics</text>
+
+        <!-- Dataproc box -->
+        <rect x="695" y="64" width="170" height="30" rx="8" fill="#161b22" stroke="rgba(210,153,34,0.4)" stroke-width="1.2"/>
+        <text x="780" y="84" fill="#d29922" font-size="11" font-weight="600" text-anchor="middle">Dataproc  Spark ETL &amp; ML</text>
+
+        <!-- Dataproc Serverless box -->
+        <rect x="695" y="100" width="170" height="22" rx="8" fill="#161b22" stroke="rgba(188,140,255,0.4)" stroke-width="1.2"/>
+        <text x="780" y="115" fill="#bc8cff" font-size="10" font-weight="600" text-anchor="middle">Serverless  Ad-hoc Spark</text>
+
+        <!-- Arrow 3: Serve (curves down from compute to serving layer below) -->
+        <path id="arch-p3" d="M780,130 C780,170 780,170 780,200" fill="none" stroke="#3fb950" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-arch-3)"/>
+        <circle r="2.5" fill="#3fb950" opacity="0.8"><animateMotion dur="1.8s" repeatCount="indefinite"><mpath href="#arch-p3"/></animateMotion></circle>
+        <text x="795" y="170" fill="#495670" font-size="9" letter-spacing="1">SERVE</text>
+
+        <!-- Layer 4: Serving / Consumption -->
+        <rect x="640" y="200" width="250" height="60" rx="12" fill="rgba(57,210,192,0.04)" stroke="rgba(57,210,192,0.15)" stroke-width="1.5" stroke-dasharray="8 4"/>
+
+        <rect x="652" y="210" width="226" height="40" rx="10" fill="#161b22" stroke="rgba(57,210,192,0.4)" stroke-width="1.2"/>
+        <circle cx="672" cy="230" r="10" fill="#0a192f" stroke="#39d2c0" stroke-width="1.2"/>
+        <text x="672" y="233" fill="#39d2c0" font-size="9" font-weight="700" text-anchor="middle">4</text>
+        <text x="700" y="225" fill="#39d2c0" font-size="12" font-weight="600">BI / ML / Apps</text>
+        <text x="700" y="240" fill="#495670" font-size="10" font-family="'JetBrains Mono',monospace">Looker, Vertex AI, APIs</text>
+
+        <!-- Additional flow: Sources also feed down to a data flow summary -->
+        <rect x="20" y="270" width="860" height="55" rx="12" fill="rgba(100,255,218,0.03)" stroke="rgba(100,255,218,0.1)" stroke-width="1" stroke-dasharray="8 4"/>
+        <text x="450" y="290" fill="rgba(100,255,218,0.5)" font-size="9" text-anchor="middle" letter-spacing="2" text-transform="uppercase">DATA FLOW SUMMARY</text>
+        <text x="100" y="312" fill="#f85149" font-size="11" font-weight="600" text-anchor="middle">Sources</text>
+        <path id="arch-sum1" d="M155,308 L260,308" fill="none" stroke="#495670" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#ah-arch-1)"/>
+        <circle r="2" fill="#f85149" opacity="0.7"><animateMotion dur="2s" repeatCount="indefinite"><mpath href="#arch-sum1"/></animateMotion></circle>
+        <text x="310" y="312" fill="#cd7f32" font-size="11" font-weight="600" text-anchor="middle">GCS (Iceberg)</text>
+        <path id="arch-sum2" d="M375,308 L470,308" fill="none" stroke="#495670" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#ah-arch-2)"/>
+        <circle r="2" fill="#58a6ff" opacity="0.7"><animateMotion dur="2s" repeatCount="indefinite"><mpath href="#arch-sum2"/></animateMotion></circle>
+        <text x="520" y="312" fill="#58a6ff" font-size="11" font-weight="600" text-anchor="middle">BigLake</text>
+        <path id="arch-sum3" d="M565,308 L640,308" fill="none" stroke="#495670" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#ah-arch-3)"/>
+        <circle r="2" fill="#3fb950" opacity="0.7"><animateMotion dur="2s" repeatCount="indefinite"><mpath href="#arch-sum3"/></animateMotion></circle>
+        <text x="700" y="312" fill="#3fb950" font-size="11" font-weight="600" text-anchor="middle">BQ / Spark</text>
+        <path id="arch-sum4" d="M760,308 L830,308" fill="none" stroke="#495670" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#ah-arch-4)"/>
+        <circle r="2" fill="#39d2c0" opacity="0.7"><animateMotion dur="2s" repeatCount="indefinite"><mpath href="#arch-sum4"/></animateMotion></circle>
+        <text x="860" y="312" fill="#39d2c0" font-size="11" font-weight="600" text-anchor="middle">Apps</text>
+      </svg>
+    </div>
+
+    <div class="callout fade-up">
+      <strong>BigQuery managed tables for Iceberg</strong> are the recommended path for most GCP lakehouses. You write data with standard BigQuery SQL (<code>INSERT</code>, <code>MERGE</code>, <code>CREATE TABLE</code>), BigQuery automatically generates and maintains Iceberg metadata and Parquet data files in your GCS bucket, and any Iceberg-compatible engine (Spark, Trino, Flink) can read the data directly from GCS. This eliminates the traditional trade-off between BigQuery's ease-of-use and open format portability.
+    </div>
+  </section>
+
+  <!-- Medallion Architecture -->
+  <section id="medallion">
+    <div class="section-title fade-up">Medallion Architecture</div>
+    <p class="body fade-up">
+      The <span class="hi">medallion architecture</span> (also called multi-hop) organizes lakehouse data into progressive layers of quality. Raw data enters as <span class="ac">bronze</span>, gets cleaned into <span class="ac">silver</span>, and is aggregated into <span class="ac">gold</span> for consumption. Each layer has clear ownership, SLAs, and data contracts.
+    </p>
+
+    <div class="fade-up" style="margin:24px 0;overflow-x:auto">
+      <svg viewBox="0 0 960 260" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:960px;display:block;margin:0 auto" font-family="'Inter',system-ui,sans-serif">
+        <defs>
+          <marker id="ah-med-1" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#cd7f32"/></marker>
+          <marker id="ah-med-2" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#c0c0c0"/></marker>
+          <marker id="ah-med-3" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#ffd700"/></marker>
+          <marker id="ah-med-4" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#39d2c0"/></marker>
+        </defs>
+
+        <!-- Stage 1: Sources (dashed container) -->
+        <rect x="5" y="10" width="130" height="240" rx="12" fill="rgba(88,166,255,0.04)" stroke="rgba(88,166,255,0.15)" stroke-width="1.5" stroke-dasharray="8 4"/>
+        <circle cx="70" cy="32" r="10" fill="#0a192f" stroke="#58a6ff" stroke-width="1.2"/>
+        <text x="70" y="35" fill="#58a6ff" font-size="9" font-weight="700" text-anchor="middle">1</text>
+        <text x="70" y="58" fill="#58a6ff" font-size="13" font-weight="700" text-anchor="middle">Sources</text>
+
+        <rect x="18" y="72" width="104" height="26" rx="6" fill="#161b22" stroke="rgba(88,166,255,0.3)" stroke-width="1"/>
+        <text x="70" y="89" fill="#a8b2d1" font-size="10" text-anchor="middle">CDC streams</text>
+
+        <rect x="18" y="104" width="104" height="26" rx="6" fill="#161b22" stroke="rgba(88,166,255,0.3)" stroke-width="1"/>
+        <text x="70" y="121" fill="#a8b2d1" font-size="10" text-anchor="middle">REST APIs</text>
+
+        <rect x="18" y="136" width="104" height="26" rx="6" fill="#161b22" stroke="rgba(88,166,255,0.3)" stroke-width="1"/>
+        <text x="70" y="153" fill="#a8b2d1" font-size="10" text-anchor="middle">Files (CSV/JSON)</text>
+
+        <rect x="18" y="168" width="104" height="26" rx="6" fill="#161b22" stroke="rgba(88,166,255,0.3)" stroke-width="1"/>
+        <text x="70" y="185" fill="#a8b2d1" font-size="10" text-anchor="middle">Events (Pub/Sub)</text>
+
+        <!-- Arrow 1: Sources -> Bronze -->
+        <path id="med-p1" d="M135,130 L185,130" fill="none" stroke="#cd7f32" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-med-1)"/>
+        <circle r="2.5" fill="#cd7f32" opacity="0.8"><animateMotion dur="1.5s" repeatCount="indefinite"><mpath href="#med-p1"/></animateMotion></circle>
+
+        <!-- Stage 2: Bronze (dashed container) -->
+        <rect x="185" y="10" width="160" height="240" rx="12" fill="rgba(205,127,50,0.04)" stroke="rgba(205,127,50,0.15)" stroke-width="1.5" stroke-dasharray="8 4"/>
+        <circle cx="265" cy="32" r="10" fill="#0a192f" stroke="#cd7f32" stroke-width="1.2"/>
+        <text x="265" y="35" fill="#cd7f32" font-size="9" font-weight="700" text-anchor="middle">2</text>
+        <text x="265" y="58" fill="#cd7f32" font-size="13" font-weight="700" text-anchor="middle">Bronze</text>
+
+        <rect x="198" y="68" width="134" height="48" rx="10" fill="#161b22" stroke="rgba(205,127,50,0.4)" stroke-width="1.2"/>
+        <text x="265" y="86" fill="#ccd6f6" font-size="10" text-anchor="middle">Raw ingestion</text>
+        <text x="265" y="102" fill="#495670" font-size="9" text-anchor="middle" font-family="'JetBrains Mono',monospace">append-only, full fidelity</text>
+
+        <rect x="198" y="126" width="64" height="22" rx="5" fill="rgba(205,127,50,0.12)" stroke="none"/>
+        <text x="230" y="141" fill="#cd7f32" font-size="9" text-anchor="middle" font-family="'JetBrains Mono',monospace">append</text>
+
+        <rect x="268" y="126" width="64" height="22" rx="5" fill="rgba(205,127,50,0.12)" stroke="none"/>
+        <text x="300" y="141" fill="#cd7f32" font-size="9" text-anchor="middle" font-family="'JetBrains Mono',monospace">schema-on-read</text>
+
+        <rect x="198" y="154" width="134" height="22" rx="5" fill="rgba(205,127,50,0.12)" stroke="none"/>
+        <text x="265" y="169" fill="#cd7f32" font-size="9" text-anchor="middle" font-family="'JetBrains Mono',monospace">raw JSON / Avro</text>
+
+        <text x="265" y="208" fill="#495670" font-size="9" text-anchor="middle" font-style="italic">Nothing dropped,</text>
+        <text x="265" y="222" fill="#495670" font-size="9" text-anchor="middle" font-style="italic">nothing transformed</text>
+
+        <!-- Arrow 2: Bronze -> Silver -->
+        <path id="med-p2" d="M345,130 L383,130" fill="none" stroke="#c0c0c0" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-med-2)"/>
+        <circle r="2.5" fill="#c0c0c0" opacity="0.8"><animateMotion dur="1.5s" repeatCount="indefinite"><mpath href="#med-p2"/></animateMotion></circle>
+        <text x="364" y="120" fill="#495670" font-size="8" text-anchor="middle" letter-spacing="0.5">CLEAN</text>
+
+        <!-- Stage 3: Silver (dashed container) -->
+        <rect x="383" y="10" width="170" height="240" rx="12" fill="rgba(192,192,192,0.04)" stroke="rgba(192,192,192,0.15)" stroke-width="1.5" stroke-dasharray="8 4"/>
+        <circle cx="468" cy="32" r="10" fill="#0a192f" stroke="#c0c0c0" stroke-width="1.2"/>
+        <text x="468" y="35" fill="#c0c0c0" font-size="9" font-weight="700" text-anchor="middle">3</text>
+        <text x="468" y="58" fill="#c0c0c0" font-size="13" font-weight="700" text-anchor="middle">Silver</text>
+
+        <rect x="396" y="68" width="144" height="48" rx="10" fill="#161b22" stroke="rgba(192,192,192,0.4)" stroke-width="1.2"/>
+        <text x="468" y="86" fill="#ccd6f6" font-size="10" text-anchor="middle">Cleansed &amp; standardized</text>
+        <text x="468" y="102" fill="#495670" font-size="9" text-anchor="middle" font-family="'JetBrains Mono',monospace">enforced schemas, SCD2</text>
+
+        <rect x="396" y="126" width="68" height="22" rx="5" fill="rgba(192,192,192,0.10)" stroke="none"/>
+        <text x="430" y="141" fill="#c0c0c0" font-size="9" text-anchor="middle" font-family="'JetBrains Mono',monospace">dedup</text>
+
+        <rect x="470" y="126" width="70" height="22" rx="5" fill="rgba(192,192,192,0.10)" stroke="none"/>
+        <text x="505" y="141" fill="#c0c0c0" font-size="9" text-anchor="middle" font-family="'JetBrains Mono',monospace">type cast</text>
+
+        <rect x="396" y="154" width="68" height="22" rx="5" fill="rgba(192,192,192,0.10)" stroke="none"/>
+        <text x="430" y="169" fill="#c0c0c0" font-size="9" text-anchor="middle" font-family="'JetBrains Mono',monospace">nulls</text>
+
+        <rect x="470" y="154" width="70" height="22" rx="5" fill="rgba(192,192,192,0.10)" stroke="none"/>
+        <text x="505" y="169" fill="#c0c0c0" font-size="9" text-anchor="middle" font-family="'JetBrains Mono',monospace">quality</text>
+
+        <text x="468" y="208" fill="#495670" font-size="9" text-anchor="middle" font-style="italic">Data quality checks,</text>
+        <text x="468" y="222" fill="#495670" font-size="9" text-anchor="middle" font-style="italic">MERGE &amp; deduplicate</text>
+
+        <!-- Arrow 3: Silver -> Gold -->
+        <path id="med-p3" d="M553,130 L588,130" fill="none" stroke="#ffd700" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-med-3)"/>
+        <circle r="2.5" fill="#ffd700" opacity="0.8"><animateMotion dur="1.5s" repeatCount="indefinite"><mpath href="#med-p3"/></animateMotion></circle>
+        <text x="570" y="120" fill="#495670" font-size="8" text-anchor="middle" letter-spacing="0.5">AGG</text>
+
+        <!-- Stage 4: Gold (dashed container) -->
+        <rect x="588" y="10" width="170" height="240" rx="12" fill="rgba(255,215,0,0.04)" stroke="rgba(255,215,0,0.15)" stroke-width="1.5" stroke-dasharray="8 4"/>
+        <circle cx="673" cy="32" r="10" fill="#0a192f" stroke="#ffd700" stroke-width="1.2"/>
+        <text x="673" y="35" fill="#ffd700" font-size="9" font-weight="700" text-anchor="middle">4</text>
+        <text x="673" y="58" fill="#ffd700" font-size="13" font-weight="700" text-anchor="middle">Gold</text>
+
+        <rect x="601" y="68" width="144" height="48" rx="10" fill="#161b22" stroke="rgba(255,215,0,0.4)" stroke-width="1.2"/>
+        <text x="673" y="86" fill="#ccd6f6" font-size="10" text-anchor="middle">Business aggregates</text>
+        <text x="673" y="102" fill="#495670" font-size="9" text-anchor="middle" font-family="'JetBrains Mono',monospace">dimensional models</text>
+
+        <rect x="601" y="126" width="68" height="22" rx="5" fill="rgba(255,215,0,0.10)" stroke="none"/>
+        <text x="635" y="141" fill="#ffd700" font-size="9" text-anchor="middle" font-family="'JetBrains Mono',monospace">star</text>
+
+        <rect x="675" y="126" width="70" height="22" rx="5" fill="rgba(255,215,0,0.10)" stroke="none"/>
+        <text x="710" y="141" fill="#ffd700" font-size="9" text-anchor="middle" font-family="'JetBrains Mono',monospace">KPI</text>
+
+        <rect x="601" y="154" width="68" height="22" rx="5" fill="rgba(255,215,0,0.10)" stroke="none"/>
+        <text x="635" y="169" fill="#ffd700" font-size="9" text-anchor="middle" font-family="'JetBrains Mono',monospace">features</text>
+
+        <rect x="675" y="154" width="70" height="22" rx="5" fill="rgba(255,215,0,0.10)" stroke="none"/>
+        <text x="710" y="169" fill="#ffd700" font-size="9" text-anchor="middle" font-family="'JetBrains Mono',monospace">SLA</text>
+
+        <text x="673" y="208" fill="#495670" font-size="9" text-anchor="middle" font-style="italic">Optimized for read,</text>
+        <text x="673" y="222" fill="#495670" font-size="9" text-anchor="middle" font-style="italic">denormalized, Z-ordered</text>
+
+        <!-- Arrow 4: Gold -> Serving -->
+        <path id="med-p4" d="M758,130 L800,130" fill="none" stroke="#39d2c0" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-med-4)"/>
+        <circle r="2.5" fill="#39d2c0" opacity="0.8"><animateMotion dur="1.5s" repeatCount="indefinite"><mpath href="#med-p4"/></animateMotion></circle>
+
+        <!-- Stage 5: Serving (dashed container) -->
+        <rect x="800" y="10" width="150" height="240" rx="12" fill="rgba(57,210,192,0.04)" stroke="rgba(57,210,192,0.15)" stroke-width="1.5" stroke-dasharray="8 4"/>
+        <circle cx="875" cy="32" r="10" fill="#0a192f" stroke="#39d2c0" stroke-width="1.2"/>
+        <text x="875" y="35" fill="#39d2c0" font-size="9" font-weight="700" text-anchor="middle">5</text>
+        <text x="875" y="58" fill="#39d2c0" font-size="13" font-weight="700" text-anchor="middle">Serving</text>
+
+        <rect x="813" y="72" width="124" height="26" rx="6" fill="#161b22" stroke="rgba(57,210,192,0.3)" stroke-width="1"/>
+        <text x="875" y="89" fill="#a8b2d1" font-size="10" text-anchor="middle">BI dashboards</text>
+
+        <rect x="813" y="104" width="124" height="26" rx="6" fill="#161b22" stroke="rgba(57,210,192,0.3)" stroke-width="1"/>
+        <text x="875" y="121" fill="#a8b2d1" font-size="10" text-anchor="middle">ML training</text>
+
+        <rect x="813" y="136" width="124" height="26" rx="6" fill="#161b22" stroke="rgba(57,210,192,0.3)" stroke-width="1"/>
+        <text x="875" y="153" fill="#a8b2d1" font-size="10" text-anchor="middle">Reverse ETL</text>
+
+        <rect x="813" y="168" width="124" height="26" rx="6" fill="#161b22" stroke="rgba(57,210,192,0.3)" stroke-width="1"/>
+        <text x="875" y="185" fill="#a8b2d1" font-size="10" text-anchor="middle">APIs</text>
+      </svg>
+    </div>
+
+    <h3 class="sub-heading fade-up">Layer Details</h3>
+
+    <div class="card-grid fade-up">
+      <div class="card" style="border-top:3px solid var(--bronze)">
+        <div class="card-title"><span style="color:var(--bronze)">Bronze Layer</span></div>
+        <p>The landing zone. Data arrives in its original format &mdash; JSON payloads, CDC change events, CSV uploads. The bronze layer preserves <span class="hi">full fidelity</span>: no rows are dropped, no fields are filtered. Append-only writes ensure you can always replay from source.</p>
+        <ul>
+          <li>Ingestion metadata: source, timestamp, batch ID</li>
+          <li>No transformations &mdash; raw bytes preserved</li>
+          <li>Partitioned by ingestion date for time travel</li>
+          <li>Retained for 90+ days (configurable lifecycle)</li>
+        </ul>
+      </div>
+      <div class="card" style="border-top:3px solid var(--silver)">
+        <div class="card-title"><span style="color:var(--silver)">Silver Layer</span></div>
+        <p>The conformance zone. This is where data engineering happens: deduplication, null handling, type casting, join enrichment, and <span class="hi">data quality enforcement</span>. Silver tables have enforced schemas and are the source of truth for downstream consumers.</p>
+        <ul>
+          <li>MERGE operations for deduplication and SCD</li>
+          <li>Enforced schemas with column-level data types</li>
+          <li>Data quality checks (Great Expectations, Soda)</li>
+          <li>Slowly-changing dimensions (SCD Type 2)</li>
+        </ul>
+      </div>
+      <div class="card" style="border-top:3px solid var(--gold-medal)">
+        <div class="card-title"><span style="color:var(--gold-medal)">Gold Layer</span></div>
+        <p>The business layer. Dimensional models (star/snowflake schemas), pre-computed aggregates, KPI rollups, and ML feature tables. Gold tables are <span class="hi">optimized for read performance</span> &mdash; denormalized, partitioned by common query patterns, and Z-ordered for scan efficiency.</p>
+        <ul>
+          <li>Fact and dimension tables (Kimball-style)</li>
+          <li>Pre-aggregated metrics by time grain</li>
+          <li>ML feature store tables</li>
+          <li>SLA-bound freshness guarantees</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout fade-up">
+      <strong>GCP implementation:</strong> On GCP, bronze tables are typically BigLake external tables over raw GCS data (minimal cost). Silver and gold tables use <strong>BigQuery managed Iceberg tables</strong> &mdash; BigQuery handles the compute for MERGE/INSERT operations, and the resulting Parquet + Iceberg metadata in GCS is readable by Spark or Trino for workloads that need engine flexibility.
+    </div>
+  </section>
+
+  <!-- Performance -->
+  <section id="performance">
+    <div class="section-title fade-up">Performance Optimization</div>
+    <p class="body fade-up">
+      A lakehouse is only as fast as its physical data layout. Unlike a traditional warehouse where the engine controls storage layout, in a lakehouse <span class="hi">you</span> control how data is organized in GCS. These five techniques make the difference between a full table scan and a sub-second query.
+    </p>
+
+    <div class="perf-grid fade-up">
+      <div class="perf-card">
+        <div class="perf-name">Partition Pruning</div>
+        <div class="perf-what">Skip entire directories of data files</div>
+        <div class="perf-desc">Organize data into partitions by date, region, or tenant. Queries with partition filters skip all non-matching directories &mdash; scanning 1 day out of 365 means reading 0.3% of the data. Use date-based for time-series, hash-based for high-cardinality keys.</div>
+      </div>
+      <div class="perf-card">
+        <div class="perf-name">Z-Ordering / Clustering</div>
+        <div class="perf-what">Co-locate related data within files</div>
+        <div class="perf-desc">Z-ordering interleaves the sort order of multiple columns using a space-filling curve. Queries filtering on <em>any</em> of the Z-ordered columns benefit from min/max pruning. In BigQuery, this is called <code>clustering</code> &mdash; same concept, automatic maintenance.</div>
+      </div>
+      <div class="perf-card">
+        <div class="perf-name">File Compaction</div>
+        <div class="perf-what">Solve the small file problem</div>
+        <div class="perf-desc">Streaming and frequent updates produce thousands of small files. Each file requires a separate metadata entry, manifest lookup, and I/O operation. Compaction merges small files into optimal sizes (128MB-1GB), reducing metadata overhead and improving scan throughput.</div>
+      </div>
+      <div class="perf-card">
+        <div class="perf-name">Predicate Pushdown</div>
+        <div class="perf-what">Push filters to the storage layer</div>
+        <div class="perf-desc">Column statistics (min, max, null count) stored in Parquet footers and Iceberg manifests let the query engine skip entire row groups and files without reading them. The filter is "pushed down" from the query engine to the storage reader.</div>
+      </div>
+      <div class="perf-card">
+        <div class="perf-name">Metadata Caching</div>
+        <div class="perf-what">Cache manifest and statistics in memory</div>
+        <div class="perf-desc">Reading Iceberg manifests from GCS for every query adds latency. Caching manifest files and column statistics in the query engine's memory (Spark driver, BigQuery slots) eliminates repeated GCS reads. BigLake's managed metastore handles this automatically.</div>
+      </div>
+      <div class="perf-card">
+        <div class="perf-name">Result Caching</div>
+        <div class="perf-what">Skip computation for repeated queries</div>
+        <div class="perf-desc">BigQuery caches query results for 24 hours (free, no bytes scanned on cache hit). For Spark, use <code>.cache()</code> or persist intermediate DataFrames to avoid recomputation. Semantic layer tools like Cube.js add application-level pre-aggregation caching.</div>
+      </div>
+    </div>
+
+    <div class="callout fade-up">
+      <strong>Iceberg advantage:</strong> Iceberg's manifest-level column statistics enable <strong>file-level pruning</strong> before reading any data. A query on <code>WHERE order_date = '2026-07-01' AND region = 'US-West'</code> can skip 99% of data files based on manifest metadata alone &mdash; no partition directory listing required. This is why Iceberg typically outperforms Delta Lake and Hudi on scan-heavy analytical queries.
+    </div>
+  </section>
+
+  <!-- Schema Evolution -->
+  <section id="schema">
+    <div class="section-title fade-up">Schema Evolution</div>
+    <p class="body fade-up">
+      Production schemas change constantly &mdash; new columns for features, renamed fields for clarity, wider types for growing values. A lakehouse must handle these changes <span class="hi">without rewriting existing data files</span>. This is where table format design differences matter most.
+    </p>
+
+    <div style="overflow-x:auto">
+    <table class="schema-table fade-up">
+      <thead>
+        <tr>
+          <th>Operation</th>
+          <th>Delta Lake</th>
+          <th>Apache Iceberg</th>
+          <th>Apache Hudi</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="hi">Add column</span></td>
+          <td class="yes">Safe</td>
+          <td class="yes">Safe</td>
+          <td class="yes">Safe</td>
+          <td>New column returns null for existing rows. No rewrite.</td>
+        </tr>
+        <tr>
+          <td><span class="hi">Drop column</span></td>
+          <td class="yes">Metadata-only</td>
+          <td class="yes">Metadata-only</td>
+          <td class="limited">Requires rewrite</td>
+          <td>Iceberg/Delta hide the column; data files untouched.</td>
+        </tr>
+        <tr>
+          <td><span class="hi">Rename column</span></td>
+          <td class="limited">Alias-based</td>
+          <td class="yes">Native (ID-based)</td>
+          <td class="limited">Limited support</td>
+          <td>Iceberg uses column IDs, not names &mdash; rename is instant.</td>
+        </tr>
+        <tr>
+          <td><span class="hi">Reorder columns</span></td>
+          <td class="nope">Not supported</td>
+          <td class="yes">Native</td>
+          <td class="nope">Not supported</td>
+          <td>Iceberg tracks column positions in metadata.</td>
+        </tr>
+        <tr>
+          <td><span class="hi">Type widening</span></td>
+          <td class="limited">int &rarr; long only</td>
+          <td class="yes">int &rarr; long, float &rarr; double, date &rarr; timestamp</td>
+          <td class="limited">int &rarr; long</td>
+          <td>Wider types read old data with implicit promotion.</td>
+        </tr>
+        <tr>
+          <td><span class="hi">Partition evolution</span></td>
+          <td class="nope">Requires full rewrite</td>
+          <td class="yes">In-place, no rewrite</td>
+          <td class="nope">Requires full rewrite</td>
+          <td>Iceberg's standout feature &mdash; see below.</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+
+    <h3 class="sub-heading fade-up">Partition Evolution: Iceberg's Killer Feature</h3>
+    <p class="body fade-up">
+      In Delta Lake and Hudi, partitioning is baked into the directory structure: <code>year=2026/month=07/day=08/</code>. Changing partitioning (e.g., from daily to hourly, or adding a new partition column) requires <span class="hi">rewriting every data file</span> &mdash; potentially petabytes of I/O.
+    </p>
+    <p class="body fade-up">
+      Iceberg decouples partitioning from the physical layout. Partition specs are stored in metadata, and each data file records which partition spec it was written under. When you <span class="ac">evolve the partition spec</span>, new data files use the new layout while old files remain untouched. The query planner handles the hybrid layout transparently.
+    </p>
+
+    <pre class="fade-up"><code>-- Start with monthly partitioning
+ALTER TABLE lakehouse.orders
+  SET PARTITION SPEC (month(order_date));
+
+-- Traffic grows. Switch to daily &mdash; no rewrite needed
+ALTER TABLE lakehouse.orders
+  SET PARTITION SPEC (day(order_date));
+
+-- Old files: partitioned by month (still readable)
+-- New files: partitioned by day (optimized for recent queries)
+-- Query planner handles both transparently</code></pre>
+
+    <div class="callout fade-up">
+      <strong>Why this matters at scale:</strong> A 50TB orders table with monthly partitioning might need to move to daily partitioning as query volume grows. With Delta Lake or Hudi, this means 50TB of rewrite I/O, hours of compute, and a maintenance window. With Iceberg, it is a single metadata-only <code>ALTER TABLE</code> that completes in under a second.
+    </div>
+  </section>
+
+  <!-- Operations -->
+  <section id="operations">
+    <div class="section-title fade-up">Operations</div>
+    <p class="body fade-up">
+      Running a lakehouse in production requires ongoing maintenance &mdash; managing snapshots, controlling storage costs, monitoring query patterns, and handling data recovery. These are the day-to-day operational concerns that determine whether your lakehouse is a managed platform or a "data swamp with ACID."
+    </p>
+
+    <div class="ops-grid fade-up">
+      <div class="ops-card">
+        <div class="ops-name">Time Travel &amp; Rollback</div>
+        <div class="ops-desc">Every write creates a new snapshot. Query any historical version by timestamp or snapshot ID. Roll back corrupted writes without restoring from backup.</div>
+        <ul>
+          <li>Iceberg: <code>SELECT * FROM table FOR SYSTEM_TIME AS OF '2026-07-07'</code></li>
+          <li>Delta: <code>SELECT * FROM table VERSION AS OF 42</code></li>
+          <li>Rollback: <code>ALTER TABLE t SET SNAPSHOT = snapshot_id</code></li>
+          <li>Branch/tag snapshots for dev/staging environments</li>
+        </ul>
+      </div>
+      <div class="ops-card">
+        <div class="ops-name">Retention &amp; Cleanup</div>
+        <div class="ops-desc">Old snapshots and orphaned data files accumulate storage costs. Periodic cleanup is essential &mdash; but must preserve enough history for time travel and in-flight queries.</div>
+        <ul>
+          <li>Iceberg: <code>CALL expire_snapshots('t', older_than)</code></li>
+          <li>Delta: <code>VACUUM table RETAIN 168 HOURS</code></li>
+          <li>Remove orphaned files not referenced by any snapshot</li>
+          <li>GCS lifecycle rules for bronze layer TTL</li>
+        </ul>
+      </div>
+      <div class="ops-card">
+        <div class="ops-name">Monitoring</div>
+        <div class="ops-desc">Track table health metrics to catch problems before they impact query performance. Small file accumulation, metadata bloat, and scan sizes are the key signals.</div>
+        <ul>
+          <li>File count per partition (alert on > 1000 small files)</li>
+          <li>Bytes scanned per query (detect missing partition pruning)</li>
+          <li>Snapshot count and metadata file sizes</li>
+          <li>BigQuery INFORMATION_SCHEMA for query patterns</li>
+        </ul>
+      </div>
+      <div class="ops-card">
+        <div class="ops-name">Cost Management</div>
+        <div class="ops-desc">Lakehouse costs are dominated by storage volume and compute scans. Controlling both requires lifecycle policies, right-sized compute, and scan-aware query patterns.</div>
+        <ul>
+          <li>GCS storage classes: Standard &rarr; Nearline &rarr; Coldline by age</li>
+          <li>BigQuery: flat-rate slots vs. on-demand by workload predictability</li>
+          <li>Dataproc Serverless: auto-scales to zero between jobs</li>
+          <li>Partition pruning reduces scanned bytes (and cost) by 90%+</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3 class="sub-heading fade-up">Operational Checklist</h3>
+
+    <div style="overflow-x:auto">
+    <table class="cmp-table fade-up">
+      <thead>
+        <tr>
+          <th>Task</th>
+          <th>Frequency</th>
+          <th>Tool</th>
+          <th>Impact</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Expire old snapshots</td>
+          <td>Daily</td>
+          <td>Dataproc Serverless / BigQuery procedure</td>
+          <td>Storage cost reduction</td>
+        </tr>
+        <tr>
+          <td>Compact small files</td>
+          <td>Daily (hot tables), Weekly (warm)</td>
+          <td>Spark <code>rewriteDataFiles</code></td>
+          <td>Query latency improvement</td>
+        </tr>
+        <tr>
+          <td>Remove orphaned files</td>
+          <td>Weekly</td>
+          <td>Iceberg <code>removeOrphanFiles</code></td>
+          <td>Storage hygiene</td>
+        </tr>
+        <tr>
+          <td>Audit scan sizes</td>
+          <td>Weekly</td>
+          <td>BigQuery INFORMATION_SCHEMA</td>
+          <td>Cost control, detect regressions</td>
+        </tr>
+        <tr>
+          <td>Update partition specs</td>
+          <td>As needed</td>
+          <td><code>ALTER TABLE SET PARTITION SPEC</code></td>
+          <td>Query performance at scale</td>
+        </tr>
+        <tr>
+          <td>Lifecycle tier transitions</td>
+          <td>Monthly review</td>
+          <td>GCS lifecycle rules</td>
+          <td>Storage cost optimization</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+
+    <div class="callout warn fade-up">
+      <strong>Common mistake:</strong> Setting <code>VACUUM</code> or <code>expire_snapshots</code> retention too aggressively. If a long-running Spark job is reading from a snapshot that gets expired mid-query, the job fails with "file not found." Keep retention at least 2x your longest-running query window &mdash; 7 days is a safe default for most workloads.
+    </div>
+  </section>
+
+</div>
+
+<div class="footer">
+  <a href="../">&larr; Back to portfolio</a> &middot; Anvesh Jarabani &middot; July 2026
+</div>
+
+<script>
+// Spotlight
+const sp=document.getElementById('spotlight');
+document.addEventListener('mousemove',e=>{sp.style.background=`radial-gradient(600px at ${e.clientX}px ${e.clientY}px,rgba(29,78,216,0.06),transparent 80%)`});
+
+// Fade-up on scroll
+const fadeObs=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');fadeObs.unobserve(e.target)}})},{threshold:0.1});
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+window.scrollTo(0, 0);
+document.querySelectorAll('.fade-up').forEach(el => {
+  if (el.getBoundingClientRect().top < window.innerHeight) { el.classList.add('visible'); }
+  else { el.style.opacity = '0'; fadeObs.observe(el); }
+});
+
+// Scroll-spy for nav
+const navLinks=document.querySelectorAll('.top-bar nav a');
+const spyObs=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){navLinks.forEach(l=>l.classList.remove('active'));const link=document.querySelector(`.top-bar nav a[href="#${e.target.id}"]`);if(link)link.classList.add('active')}})},{rootMargin:'-30% 0px -70% 0px'});
+document.querySelectorAll('section[id]').forEach(s=>spyObs.observe(s));
+
+// Staggered card reveal
+const cardObs=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){const cards=e.target.querySelectorAll('.format-card,.gcp-card,.perf-card,.ops-card,.card,.metric-card,.cmp-table tr,.schema-table tr');cards.forEach((c,i)=>{c.style.opacity='0';c.style.transform='translateY(12px)';c.style.transition='opacity .4s ease,transform .4s ease';setTimeout(()=>{c.style.opacity='1';c.style.transform='translateY(0)'},i*80)});cardObs.unobserve(e.target)}})},{threshold:0.1});
+document.querySelectorAll('.card-grid,.gcp-grid,.perf-grid,.ops-grid,.metrics').forEach(el=>cardObs.observe(el));
+// Smooth scroll for nav clicks
+document.querySelectorAll('.top-bar nav a[href^="#"]').forEach(function(a){a.addEventListener('click',function(e){e.preventDefault();var t=document.querySelector(this.getAttribute('href'));if(t)t.scrollIntoView({behavior:'smooth',block:'start'});history.pushState(null,'',this.getAttribute('href'))})});
+</script>
+</body>
+</html>

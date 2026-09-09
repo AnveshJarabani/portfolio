@@ -1,0 +1,1447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LLM Agents & Tool Use — Anvesh Jarabani</title>
+<script>if("scrollRestoration" in history)history.scrollRestoration="manual";if(location.hash)history.replaceState(null,"",location.pathname);window.addEventListener("DOMContentLoaded",function(){window.scrollTo(0,0)});window.addEventListener("load",function(){window.scrollTo(0,0)});</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a192f;--bg-light:#112240;--border:#233554;
+  --text:#ccd6f6;--text-sec:#a8b2d1;--text-dim:#495670;
+  --accent:#64ffda;--accent-dim:rgba(100,255,218,0.1);
+  --white:#e6f1ff;
+  --react:#58a6ff;--plan:#3fb950;--multi:#bc8cff;
+  --hier:#d29922;--tool:#39d2c0;--guard:#f85149;
+}
+::selection{background:rgba(100,255,218,0.2)}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;font-size:15px}
+a{color:var(--accent);text-decoration:none;transition:opacity .2s}
+a:hover{opacity:.8}
+code,.mono{font-family:'JetBrains Mono',monospace;font-size:13px;background:rgba(100,255,218,0.07);padding:2px 6px;border-radius:4px;color:var(--accent)}
+pre{background:var(--bg-light);border:1px solid var(--border);border-radius:8px;padding:20px;overflow-x:auto;margin:16px 0;line-height:1.5}
+pre code{background:none;padding:0;font-size:13px;color:var(--text)}
+
+/* Layout */
+.top-bar{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(10,25,47,0.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between}
+.top-bar .back{font-size:13px;color:var(--text-sec);display:flex;align-items:center;gap:6px}
+.top-bar .back:hover{color:var(--accent)}
+.top-bar nav{display:flex;gap:20px}
+.top-bar nav a{font-size:12px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-dim);transition:color .2s}
+.top-bar nav a.active{color:var(--accent)}
+.top-bar nav a:hover{color:var(--text-sec);opacity:1}
+
+.container{max-width:900px;margin:0 auto;padding:92px 24px 60px}
+.hero-title{font-size:clamp(28px,4vw,40px);font-weight:800;color:var(--white);margin-bottom:8px;letter-spacing:-0.5px}
+.hero-sub{font-size:16px;color:var(--text-sec);margin-bottom:8px}
+.hero-meta{font-size:13px;color:var(--text-dim);margin-bottom:40px;display:flex;gap:16px;flex-wrap:wrap}
+.hero-meta span{display:flex;align-items:center;gap:4px}
+
+section{padding:48px 0;border-bottom:1px solid var(--border)}
+section:last-of-type{border-bottom:none}
+.section-title{font-size:13px;text-transform:uppercase;letter-spacing:2px;color:var(--accent);margin-bottom:24px;font-weight:600}
+
+/* Fade-in */
+.fade-up{transform:translateY(16px);transition:opacity .5s ease,transform .5s ease}
+.fade-up.visible{opacity:1;transform:translateY(0)}
+
+/* Cards */
+.card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin:20px 0}
+.card-grid.two-col{grid-template-columns:repeat(auto-fit,minmax(340px,1fr))}
+.card{background:var(--bg-light);border:1px solid var(--border);border-radius:8px;padding:20px;transition:all .25s}
+.card:hover{border-color:var(--text-dim);background:rgba(100,255,218,0.03);box-shadow:0 4px 20px rgba(0,0,0,0.2)}
+.card .card-title{font-size:14px;font-weight:600;color:var(--white);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.card .card-title .icon{font-size:16px}
+.card p,.card li{font-size:13px;color:var(--text-sec);line-height:1.6}
+.card ul{list-style:none;padding:0}
+.card li{padding:3px 0}
+.card li::before{content:"-> ";color:var(--accent);font-size:12px;font-family:'JetBrains Mono',monospace}
+
+/* Architecture pattern diagrams */
+.arch-pattern{background:var(--bg-light);border:1px solid var(--border);border-radius:8px;padding:24px;margin:16px 0;transition:all .25s}
+.arch-pattern:hover{border-color:var(--text-dim);box-shadow:0 4px 20px rgba(0,0,0,0.2)}
+.arch-pattern .pattern-header{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.arch-pattern .pattern-name{font-size:16px;font-weight:700;color:var(--white)}
+.arch-pattern .pattern-tag{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;padding:3px 10px;border-radius:20px;font-weight:600}
+.arch-pattern .pattern-desc{font-size:13px;color:var(--text-sec);margin-bottom:16px;line-height:1.7}
+
+/* CSS-only flow diagrams */
+.flow-row{display:flex;align-items:center;gap:0;justify-content:center;flex-wrap:wrap;margin:12px 0}
+.flow-node{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 14px;font-size:12px;font-weight:600;color:var(--white);text-align:center;white-space:nowrap}
+.flow-arrow{color:var(--text-dim);font-size:16px;padding:0 6px;flex-shrink:0}
+.flow-node.accent-node{border-color:rgba(100,255,218,0.3);color:var(--accent)}
+.flow-node.react-node{border-color:rgba(88,166,255,0.3);color:var(--react)}
+.flow-node.plan-node{border-color:rgba(63,185,80,0.3);color:var(--plan)}
+.flow-node.multi-node{border-color:rgba(188,140,255,0.3);color:var(--multi)}
+.flow-node.hier-node{border-color:rgba(210,153,34,0.3);color:var(--hier)}
+
+/* Loop indicator */
+.loop-indicator{display:flex;align-items:center;gap:8px;margin-top:8px;justify-content:center}
+.loop-line{height:1px;flex:1;max-width:60px;background:repeating-linear-gradient(90deg,var(--text-dim) 0,var(--text-dim) 4px,transparent 4px,transparent 8px)}
+.loop-label{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px}
+
+/* Multi-agent cluster */
+.agent-cluster{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:12px 0}
+.agent-box{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 14px;font-size:11px;text-align:center}
+.agent-box .agent-role{font-weight:600;color:var(--white);margin-bottom:2px}
+.agent-box .agent-task{color:var(--text-dim);font-size:10px}
+
+/* Hierarchical tree */
+.tree-container{display:flex;flex-direction:column;align-items:center;gap:0;margin:12px 0}
+.tree-row{display:flex;gap:16px;justify-content:center}
+.tree-connector{display:flex;justify-content:center;height:20px;position:relative}
+.tree-connector .vline{width:1px;height:20px;background:var(--border)}
+.tree-branches{display:flex;justify-content:center;position:relative;height:20px;gap:0}
+.tree-branches::before{content:'';position:absolute;top:0;left:25%;right:25%;height:1px;background:var(--border)}
+.tree-branches .branch{width:1px;height:20px;background:var(--border)}
+
+/* Sequence steps */
+.seq-diagram{display:flex;flex-direction:column;gap:0;margin:24px 0}
+.seq-step{display:flex;align-items:flex-start;gap:16px;padding:16px 0}
+.seq-num{width:28px;height:28px;border-radius:50%;background:var(--accent-dim);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;margin-top:2px}
+.seq-content{flex:1}
+.seq-actor{font-size:12px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.seq-desc{font-size:13px;color:var(--text-sec)}
+
+/* Comparison table */
+.comp-table{width:100%;border-collapse:collapse;margin:20px 0;font-size:13px}
+.comp-table th{text-align:left;padding:10px 14px;border-bottom:2px solid var(--border);color:var(--text-dim);font-size:11px;text-transform:uppercase;letter-spacing:1px;font-weight:600}
+.comp-table td{padding:10px 14px;border-bottom:1px solid var(--border);color:var(--text-sec)}
+.comp-table tr:hover td{background:var(--accent-dim)}
+.comp-table .fw-tag{font-size:10px;font-weight:600;padding:2px 8px;border-radius:12px;display:inline-block}
+
+/* Memory cards */
+.memory-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:20px 0}
+.memory-card{background:var(--bg-light);border:1px solid var(--border);border-radius:8px;padding:16px;transition:all .25s}
+.memory-card:hover{border-color:var(--text-dim);box-shadow:0 0 20px rgba(0,0,0,0.2)}
+.memory-card .mem-icon{font-size:20px;margin-bottom:8px}
+.memory-card .mem-name{font-size:14px;font-weight:600;margin-bottom:4px}
+.memory-card .mem-scope{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px}
+.memory-card .mem-desc{font-size:12px;color:var(--text-sec);line-height:1.6}
+.memory-card .mem-impl{font-size:11px;color:var(--text-dim);margin-top:8px;font-style:italic}
+
+/* Guardrail layers */
+.guard-stack{display:flex;flex-direction:column;gap:12px;margin:20px 0}
+.guard-card{background:var(--bg-light);border:1px solid var(--border);border-radius:8px;padding:16px 20px;display:flex;gap:16px;align-items:flex-start;transition:all .25s}
+.guard-card:hover{border-color:var(--text-dim);background:rgba(100,255,218,0.02)}
+.guard-num{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.guard-content{flex:1}
+.guard-title{font-size:14px;font-weight:600;color:var(--white);margin-bottom:4px}
+.guard-desc{font-size:13px;color:var(--text-sec);line-height:1.6}
+
+/* Pipeline diagram */
+.pipeline{display:flex;flex-direction:column;align-items:center;gap:0;margin:24px 0}
+.pipeline-node{background:var(--bg-light);border:1px solid var(--border);border-radius:8px;padding:14px 24px;min-width:380px;text-align:center;transition:border-color .3s}
+.pipeline-node:hover{border-color:var(--text-dim)}
+.pipeline-node .pn-title{font-size:13px;font-weight:600;color:var(--white)}
+.pipeline-node .pn-sub{font-size:11px;color:var(--text-dim);font-family:'JetBrains Mono',monospace}
+.pipeline-connector{display:flex;flex-direction:column;align-items:center}
+.pipeline-connector .vline{width:2px;height:16px;background:var(--border)}
+.pipeline-connector .arrow-down{width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid var(--border)}
+
+/* Agent pattern cards */
+.pattern-card{background:var(--bg-light);border:1px solid var(--border);border-radius:8px;padding:20px;margin:16px 0;transition:all .25s}
+.pattern-card:hover{border-color:var(--text-dim);box-shadow:0 4px 20px rgba(0,0,0,0.2)}
+.pattern-card .pc-header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.pattern-card .pc-name{font-size:15px;font-weight:700;color:var(--white)}
+.pattern-card .pc-tag{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;font-weight:600;padding:3px 10px;border-radius:20px}
+.pattern-card .pc-desc{font-size:13px;color:var(--text-sec);line-height:1.7;margin-bottom:12px}
+.pattern-card .pc-loop{font-size:12px;color:var(--text-dim);font-family:'JetBrains Mono',monospace;padding:8px 12px;background:var(--bg);border-radius:6px;border:1px solid var(--border)}
+
+/* Callout */
+.callout{background:var(--accent-dim);border:1px solid rgba(100,255,218,0.15);border-radius:8px;padding:16px 20px;margin:20px 0;font-size:13px;color:var(--text-sec);line-height:1.6}
+.callout strong{color:var(--accent)}
+.callout code{background:rgba(100,255,218,0.12)}
+.callout.warn{background:rgba(248,81,73,0.08);border-color:rgba(248,81,73,0.2)}
+.callout.warn strong{color:var(--guard)}
+
+/* Highlight */
+.hi{color:var(--white);font-weight:600}
+.ac{color:var(--accent);font-weight:700}
+
+/* Spotlight */
+#spotlight{position:fixed;inset:0;z-index:0;pointer-events:none;transition:background .15s}
+.container,.top-bar{position:relative;z-index:1}
+
+/* Tool call viz */
+.tool-call-viz{margin:20px 0}
+.tc-block{background:var(--bg-light);border:1px solid var(--border);border-radius:8px;padding:16px 20px;margin:8px 0;position:relative}
+.tc-block::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:8px 0 0 8px}
+.tc-block.tc-system::before{background:var(--text-dim)}
+.tc-block.tc-model::before{background:var(--react)}
+.tc-block.tc-runtime::before{background:var(--plan)}
+.tc-block.tc-result::before{background:var(--accent)}
+.tc-role{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;margin-bottom:6px}
+.tc-content{font-size:12px;color:var(--text-sec);font-family:'JetBrains Mono',monospace;line-height:1.6}
+.tc-connector{display:flex;justify-content:center;height:16px}
+.tc-connector .tc-arrow{width:2px;height:16px;background:var(--border);position:relative}
+.tc-connector .tc-arrow::after{content:'';position:absolute;bottom:0;left:-4px;width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid var(--border)}
+
+/* Footer */
+.footer{text-align:center;padding:40px 24px;font-size:12px;color:var(--text-dim)}
+.footer a{color:var(--text-sec)}
+.footer a:hover{color:var(--accent)}
+
+/* Responsive */
+@media(max-width:600px){
+  .top-bar nav{display:none}
+  .flow-row{flex-direction:column;align-items:center}
+  .flow-arrow{transform:rotate(90deg)}
+  .agent-cluster{flex-direction:column;align-items:center}
+  .card-grid{grid-template-columns:1fr}
+  .card-grid.two-col{grid-template-columns:1fr}
+  .memory-grid{grid-template-columns:1fr}
+  .pipeline-node{min-width:auto;width:100%}
+  .tree-row{flex-direction:column;align-items:center;gap:8px}
+  .comp-table{font-size:11px}
+  .comp-table th,.comp-table td{padding:8px 10px}
+}
+</style>
+</head>
+<body>
+
+<div id="spotlight"></div>
+
+<div class="top-bar">
+  <a href="../" class="back">&larr; anveshjarabani.com</a>
+  <nav>
+    <a href="#overview">Overview</a>
+    <a href="#architectures">Architectures</a>
+    <a href="#tools">Tool Use</a>
+    <a href="#orchestration">Orchestration</a>
+    <a href="#memory">Memory</a>
+    <a href="#guardrails">Guardrails</a>
+    <a href="#patterns">Patterns</a>
+  </nav>
+</div>
+
+<div class="container">
+
+  <div class="fade-up">
+    <h1 class="hero-title">LLM Agents &amp; Tool Use</h1>
+    <p class="hero-sub">Agent architectures, function calling, orchestration frameworks, memory systems, and guardrails &mdash; how LLMs go from generating text to taking action.</p>
+    <div class="hero-meta">
+      <span>Anvesh Jarabani</span>
+      <span>&middot;</span>
+      <span>July 2026</span>
+      <span>&middot;</span>
+      <span>13 min read</span>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- OVERVIEW -->
+  <!-- ======================================================== -->
+  <section id="overview">
+    <div class="section-title fade-up">Overview</div>
+    <p class="fade-up" style="margin-bottom:20px;color:var(--text-sec)">
+      An <span class="hi">LLM agent</span> is a system that combines a language model with tools and a control loop. The model <span class="ac">observes</span> its environment, <span class="ac">reasons</span> about what to do, <span class="ac">acts</span> by calling a tool, and then <span class="ac">repeats</span> until the task is complete. This transforms LLMs from stateless text generators into autonomous problem solvers that can interact with databases, APIs, file systems, and the real world.
+    </p>
+
+    <p class="fade-up" style="margin-bottom:24px;color:var(--text-sec)">
+      The core insight is simple: <span class="hi">an LLM alone can only produce text</span>. But give it a set of well-defined tools and a feedback loop, and it becomes capable of multi-step reasoning, error recovery, and task completion across arbitrarily complex workflows. The model decides <em>which</em> tool to call, <em>what arguments</em> to pass, and <em>what to do next</em> based on the result.
+    </p>
+
+    <!-- Agent Loop Diagram -->
+    <div class="fade-up" style="margin:32px 0;overflow-x:auto">
+      <p style="font-size:14px;font-weight:600;color:var(--white);margin-bottom:16px;text-align:center">The Agent Loop</p>
+      <svg viewBox="0 0 700 420" width="100%" style="max-width:700px;display:block;margin:0 auto" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="al-ah" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#495670"/></marker>
+          <marker id="al-ah-accent" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#64ffda"/></marker>
+          <marker id="al-ah-blue" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#58a6ff"/></marker>
+          <marker id="al-ah-green" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#3fb950"/></marker>
+          <marker id="al-ah-purple" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#bc8cff"/></marker>
+          <marker id="al-ah-gold" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#d29922"/></marker>
+        </defs>
+
+        <!-- Dashed container -->
+        <rect x="20" y="10" width="660" height="400" rx="12" fill="rgba(100,255,218,0.04)" stroke="rgba(100,255,218,0.15)" stroke-width="1.5" stroke-dasharray="8 4"/>
+
+        <!-- Circular layout: 6 nodes arranged in an oval -->
+        <!-- Positions (clockwise from top): -->
+        <!-- User Query: top-center (350, 55) -->
+        <!-- Observe: top-right (570, 130) -->
+        <!-- Reason: right (590, 260) -->
+        <!-- Act: bottom-right (430, 355) -->
+        <!-- Result: bottom-left (220, 355) -->
+        <!-- Response: left (110, 200) -->
+
+        <!-- === NODE: User Query (top center) === -->
+        <rect x="275" y="35" width="150" height="40" rx="10" fill="#161b22" stroke="rgba(100,255,218,0.4)" stroke-width="1.2"/>
+        <text x="350" y="60" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="600" fill="#64ffda" text-anchor="middle">User Query</text>
+
+        <!-- === NODE: Observe (top right) === -->
+        <rect x="502" y="105" width="120" height="40" rx="10" fill="#161b22" stroke="rgba(88,166,255,0.4)" stroke-width="1.2"/>
+        <text x="562" y="130" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="600" fill="#58a6ff" text-anchor="middle">Observe</text>
+
+        <!-- === NODE: Reason (right) === -->
+        <rect x="525" y="235" width="120" height="40" rx="10" fill="#161b22" stroke="rgba(63,185,80,0.4)" stroke-width="1.2"/>
+        <text x="585" y="260" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="600" fill="#3fb950" text-anchor="middle">Reason</text>
+
+        <!-- === NODE: Act / Tool Call (bottom right) === -->
+        <rect x="355" y="330" width="155" height="40" rx="10" fill="#161b22" stroke="rgba(188,140,255,0.4)" stroke-width="1.2"/>
+        <text x="432" y="355" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="600" fill="#bc8cff" text-anchor="middle">Act (Tool Call)</text>
+
+        <!-- === NODE: Result (bottom left) === -->
+        <rect x="152" y="330" width="120" height="40" rx="10" fill="#161b22" stroke="rgba(210,153,34,0.4)" stroke-width="1.2"/>
+        <text x="212" y="355" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="600" fill="#d29922" text-anchor="middle">Result</text>
+
+        <!-- === NODE: Response (left) === -->
+        <rect x="52" y="175" width="130" height="40" rx="10" fill="#161b22" stroke="rgba(100,255,218,0.4)" stroke-width="1.2"/>
+        <text x="117" y="200" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="600" fill="#64ffda" text-anchor="middle">Response</text>
+
+        <!-- === ARROWS (curved paths between nodes) === -->
+
+        <!-- 1. User Query -> Observe -->
+        <path id="al-p1" d="M425,55 C470,55 500,80 502,115" fill="none" stroke="#495670" stroke-width="1.5" marker-end="url(#al-ah)"/>
+        <circle r="2.5" fill="#64ffda" opacity="0.8"><animateMotion dur="2s" repeatCount="indefinite"><mpath href="#al-p1"/></animateMotion></circle>
+        <circle cx="465" cy="72" r="10" fill="#0a192f" stroke="#64ffda" stroke-width="1.2"/><text x="465" y="76" font-family="Inter, system-ui, sans-serif" font-size="9" font-weight="700" fill="#64ffda" text-anchor="middle">1</text>
+
+        <!-- 2. Observe -> Reason -->
+        <path id="al-p2" d="M585,145 C600,170 600,210 585,235" fill="none" stroke="#495670" stroke-width="1.5" marker-end="url(#al-ah)"/>
+        <circle r="2.5" fill="#58a6ff" opacity="0.8"><animateMotion dur="2s" repeatCount="indefinite"><mpath href="#al-p2"/></animateMotion></circle>
+        <circle cx="600" cy="190" r="10" fill="#0a192f" stroke="#58a6ff" stroke-width="1.2"/><text x="600" y="194" font-family="Inter, system-ui, sans-serif" font-size="9" font-weight="700" fill="#58a6ff" text-anchor="middle">2</text>
+
+        <!-- 3. Reason -> Act -->
+        <path id="al-p3" d="M545,275 C520,300 490,320 490,330" fill="none" stroke="#495670" stroke-width="1.5" marker-end="url(#al-ah)"/>
+        <circle r="2.5" fill="#3fb950" opacity="0.8"><animateMotion dur="2s" repeatCount="indefinite"><mpath href="#al-p3"/></animateMotion></circle>
+        <circle cx="520" cy="300" r="10" fill="#0a192f" stroke="#3fb950" stroke-width="1.2"/><text x="520" y="304" font-family="Inter, system-ui, sans-serif" font-size="9" font-weight="700" fill="#3fb950" text-anchor="middle">3</text>
+
+        <!-- 4. Act -> Result -->
+        <path id="al-p4" d="M355,350 C320,350 290,350 272,350" fill="none" stroke="#495670" stroke-width="1.5" marker-end="url(#al-ah)"/>
+        <circle r="2.5" fill="#bc8cff" opacity="0.8"><animateMotion dur="2s" repeatCount="indefinite"><mpath href="#al-p4"/></animateMotion></circle>
+        <circle cx="315" cy="340" r="10" fill="#0a192f" stroke="#bc8cff" stroke-width="1.2"/><text x="315" y="344" font-family="Inter, system-ui, sans-serif" font-size="9" font-weight="700" fill="#bc8cff" text-anchor="middle">4</text>
+
+        <!-- 5. Result -> Response -->
+        <path id="al-p5" d="M160,330 C120,310 95,260 100,215" fill="none" stroke="#495670" stroke-width="1.5" marker-end="url(#al-ah)"/>
+        <circle r="2.5" fill="#d29922" opacity="0.8"><animateMotion dur="2s" repeatCount="indefinite"><mpath href="#al-p5"/></animateMotion></circle>
+        <circle cx="115" cy="275" r="10" fill="#0a192f" stroke="#d29922" stroke-width="1.2"/><text x="115" y="279" font-family="Inter, system-ui, sans-serif" font-size="9" font-weight="700" fill="#d29922" text-anchor="middle">5</text>
+
+        <!-- 6. Response -> User Query (up the left side) -->
+        <path id="al-p6" d="M117,175 C117,130 200,50 275,50" fill="none" stroke="#495670" stroke-width="1.5" marker-end="url(#al-ah-accent)"/>
+        <circle r="2.5" fill="#64ffda" opacity="0.8"><animateMotion dur="2.5s" repeatCount="indefinite"><mpath href="#al-p6"/></animateMotion></circle>
+
+        <!-- === LOOP-BACK: Result -> Observe (dashed, curved through center) === -->
+        <path id="al-loop" d="M230,330 C280,260 380,200 502,120" fill="none" stroke="rgba(100,255,218,0.35)" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#al-ah-accent)"/>
+        <circle r="2.5" fill="#64ffda" opacity="0.6"><animateMotion dur="3s" repeatCount="indefinite"><mpath href="#al-loop"/></animateMotion></circle>
+
+        <!-- Loop label -->
+        <rect x="270" y="245" width="150" height="24" rx="12" fill="rgba(100,255,218,0.08)" stroke="rgba(100,255,218,0.2)" stroke-width="1"/>
+        <text x="345" y="261" font-family="JetBrains Mono, monospace" font-size="10" fill="#64ffda" text-anchor="middle" letter-spacing="1">repeat until done</text>
+
+        <!-- Center emoji label -->
+        <text x="350" y="210" font-family="Inter, system-ui, sans-serif" font-size="22" text-anchor="middle">&#x1F504;</text>
+      </svg>
+    </div>
+
+    <div class="callout fade-up">
+      <strong>Why agents matter:</strong> Traditional LLM applications are single-turn: prompt in, text out. Agents break this constraint. A coding agent can write code, run tests, read errors, and fix bugs &mdash; iterating until the tests pass. A research agent can search the web, read papers, cross-reference claims, and produce a cited report. The agent pattern is how LLMs move from <em>answering questions</em> to <em>completing tasks</em>.
+    </div>
+
+    <div class="card-grid fade-up" style="margin-top:24px">
+      <div class="card">
+        <div class="card-title">LLM (The Brain)</div>
+        <ul>
+          <li>Understands natural language instructions</li>
+          <li>Reasons about which tool to use</li>
+          <li>Generates structured tool call arguments</li>
+          <li>Interprets results and decides next step</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-title">Tools (The Hands)</div>
+        <ul>
+          <li>APIs, databases, file systems, browsers</li>
+          <li>Code execution sandboxes</li>
+          <li>Search engines and knowledge bases</li>
+          <li>External services (email, Slack, Jira)</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-title">Control Loop (The Spine)</div>
+        <ul>
+          <li>Orchestrates observe-reason-act cycle</li>
+          <li>Manages conversation state and history</li>
+          <li>Enforces guardrails and permissions</li>
+          <li>Handles errors, retries, and escalation</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================== -->
+  <!-- ARCHITECTURES -->
+  <!-- ======================================================== -->
+  <section id="architectures">
+    <div class="section-title fade-up">Agent Architectures</div>
+    <p class="fade-up" style="margin-bottom:24px;color:var(--text-sec)">
+      Four dominant architecture patterns have emerged, each trading off <span class="hi">simplicity vs. capability</span>. The right choice depends on task complexity, latency requirements, and how much control you need over the execution path.
+    </p>
+
+    <!-- ReAct -->
+    <div class="arch-pattern fade-up">
+      <div class="pattern-header">
+        <div class="pattern-name">ReAct</div>
+        <span class="pattern-tag" style="background:rgba(88,166,255,0.15);color:var(--react)">Reason + Act</span>
+      </div>
+      <div class="pattern-desc">
+        The model interleaves <span class="hi">reasoning traces</span> with <span class="hi">tool actions</span> in a single loop. At each step, it thinks out loud ("I need to look up the user's order history"), calls a tool, observes the result, then reasons about the next action. Simple, debuggable, and the most widely deployed pattern.
+      </div>
+      <div style="margin:12px 0;overflow-x:auto">
+      <svg viewBox="0 0 600 300" width="100%" style="max-width:600px;display:block;margin:0 auto" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="react-ah" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#58a6ff"/></marker>
+          <marker id="react-ah-dim" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#495670"/></marker>
+          <marker id="react-ah-accent" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#3fb950"/></marker>
+        </defs>
+
+        <!-- Dashed container for the loop -->
+        <rect x="30" y="20" width="420" height="260" rx="12" fill="rgba(88,166,255,0.04)" stroke="rgba(88,166,255,0.15)" stroke-width="1.5" stroke-dasharray="8 4"/>
+        <text x="240" y="44" font-family="JetBrains Mono, monospace" font-size="10" fill="#58a6ff" text-anchor="middle" letter-spacing="1" opacity="0.7">ITERATIVE LOOP</text>
+
+        <!-- Triangle layout: Think (top), Act (bottom-right), Observe (bottom-left) -->
+
+        <!-- NODE: Think (top center of triangle) -->
+        <rect x="170" y="60" width="140" height="44" rx="10" fill="#161b22" stroke="rgba(88,166,255,0.4)" stroke-width="1.2"/>
+        <text x="240" y="78" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#495670" text-anchor="middle">&#x1F9E0;</text>
+        <text x="240" y="95" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="600" fill="#58a6ff" text-anchor="middle">Think</text>
+
+        <!-- NODE: Act (bottom right) -->
+        <rect x="320" y="180" width="120" height="44" rx="10" fill="#161b22" stroke="rgba(88,166,255,0.4)" stroke-width="1.2"/>
+        <text x="380" y="198" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#495670" text-anchor="middle">&#x26A1;</text>
+        <text x="380" y="215" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="600" fill="#58a6ff" text-anchor="middle">Act</text>
+
+        <!-- NODE: Observe (bottom left) -->
+        <rect x="50" y="180" width="130" height="44" rx="10" fill="#161b22" stroke="rgba(88,166,255,0.4)" stroke-width="1.2"/>
+        <text x="115" y="198" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#495670" text-anchor="middle">&#x1F441;</text>
+        <text x="115" y="215" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="600" fill="#58a6ff" text-anchor="middle">Observe</text>
+
+        <!-- Arrow: Think -> Act -->
+        <path id="react-p1" d="M310,100 C340,130 370,155 370,180" fill="none" stroke="#495670" stroke-width="1.5" marker-end="url(#react-ah-dim)"/>
+        <circle r="2.5" fill="#58a6ff" opacity="0.8"><animateMotion dur="1.8s" repeatCount="indefinite"><mpath href="#react-p1"/></animateMotion></circle>
+        <circle cx="348" cy="140" r="10" fill="#0a192f" stroke="#58a6ff" stroke-width="1.2"/><text x="348" y="144" font-family="Inter, system-ui, sans-serif" font-size="9" font-weight="700" fill="#58a6ff" text-anchor="middle">1</text>
+
+        <!-- Arrow: Act -> Observe -->
+        <path id="react-p2" d="M320,210 C270,230 210,230 180,210" fill="none" stroke="#495670" stroke-width="1.5" marker-end="url(#react-ah-dim)"/>
+        <circle r="2.5" fill="#58a6ff" opacity="0.8"><animateMotion dur="1.8s" repeatCount="indefinite"><mpath href="#react-p2"/></animateMotion></circle>
+        <circle cx="250" cy="228" r="10" fill="#0a192f" stroke="#58a6ff" stroke-width="1.2"/><text x="250" y="232" font-family="Inter, system-ui, sans-serif" font-size="9" font-weight="700" fill="#58a6ff" text-anchor="middle">2</text>
+
+        <!-- Arrow: Observe -> Think -->
+        <path id="react-p3" d="M100,180 C85,140 130,100 170,88" fill="none" stroke="#495670" stroke-width="1.5" marker-end="url(#react-ah-dim)"/>
+        <circle r="2.5" fill="#58a6ff" opacity="0.8"><animateMotion dur="1.8s" repeatCount="indefinite"><mpath href="#react-p3"/></animateMotion></circle>
+        <circle cx="110" cy="130" r="10" fill="#0a192f" stroke="#58a6ff" stroke-width="1.2"/><text x="110" y="134" font-family="Inter, system-ui, sans-serif" font-size="9" font-weight="700" fill="#58a6ff" text-anchor="middle">3</text>
+
+        <!-- EXIT: Done node + arrow from Observe -->
+        <path id="react-exit" d="M115,224 C115,250 115,260 115,262" fill="none" stroke="rgba(63,185,80,0.5)" stroke-width="1.5" stroke-dasharray="5 3"/>
+        <line x1="115" y1="262" x2="490" y2="262" stroke="rgba(63,185,80,0.3)" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#react-ah-accent)"/>
+        <circle r="2" fill="#3fb950" opacity="0.7"><animateMotion dur="3s" repeatCount="indefinite" path="M115,224 L115,262 L490,262"/></circle>
+
+        <!-- Done node -->
+        <rect x="492" y="242" width="80" height="40" rx="10" fill="#161b22" stroke="rgba(63,185,80,0.4)" stroke-width="1.2"/>
+        <text x="532" y="256" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#495670" text-anchor="middle">&#x2705;</text>
+        <text x="532" y="272" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="600" fill="#3fb950" text-anchor="middle">Done</text>
+
+        <!-- Exit label -->
+        <text x="310" y="254" font-family="JetBrains Mono, monospace" font-size="9" fill="#3fb950" text-anchor="middle" opacity="0.7">complete</text>
+      </svg>
+      </div>
+      <p style="font-size:12px;color:var(--text-dim);margin-top:12px"><strong style="color:var(--text-sec)">Best for:</strong> Single-agent tasks, API integrations, chatbot tool use. Low overhead, easy to trace.</p>
+    </div>
+
+    <!-- Plan-and-Execute -->
+    <div class="arch-pattern fade-up">
+      <div class="pattern-header">
+        <div class="pattern-name">Plan-and-Execute</div>
+        <span class="pattern-tag" style="background:rgba(63,185,80,0.15);color:var(--plan)">Plan First</span>
+      </div>
+      <div class="pattern-desc">
+        A <span class="hi">planning step</span> generates a complete task decomposition before any execution begins. A separate executor then works through the plan step by step, optionally re-planning if a step fails. This avoids the greedy local decisions of ReAct and handles complex multi-step tasks more reliably.
+      </div>
+      <div style="margin:12px 0;overflow-x:auto">
+      <svg viewBox="0 0 700 220" width="100%" style="max-width:700px;display:block;margin:0 auto" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="pe-ah" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#495670"/></marker>
+          <marker id="pe-ah-green" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#3fb950"/></marker>
+        </defs>
+
+        <!-- Dashed container for execution steps -->
+        <rect x="155" y="55" width="440" height="80" rx="12" fill="rgba(63,185,80,0.04)" stroke="rgba(63,185,80,0.15)" stroke-width="1.5" stroke-dasharray="8 4"/>
+        <text x="375" y="72" font-family="JetBrains Mono, monospace" font-size="9" fill="#3fb950" text-anchor="middle" letter-spacing="1" opacity="0.6">EXECUTION</text>
+
+        <!-- NODE: Planner LLM -->
+        <rect x="20" y="75" width="120" height="44" rx="10" fill="#161b22" stroke="rgba(63,185,80,0.4)" stroke-width="1.2"/>
+        <text x="80" y="93" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#495670" text-anchor="middle">&#x1F4CB;</text>
+        <text x="80" y="110" font-family="Inter, system-ui, sans-serif" font-size="12" font-weight="600" fill="#3fb950" text-anchor="middle">Planner LLM</text>
+
+        <!-- Arrow: Planner -> Step 1 -->
+        <path id="pe-p1" d="M140,97 L170,97" fill="none" stroke="#495670" stroke-width="1.5" marker-end="url(#pe-ah)"/>
+        <circle r="2.5" fill="#3fb950" opacity="0.8"><animateMotion dur="1.5s" repeatCount="indefinite"><mpath href="#pe-p1"/></animateMotion></circle>
+
+        <!-- NODE: Step 1 -->
+        <rect x="175" y="80" width="80" height="34" rx="8" fill="#161b22" stroke="rgba(63,185,80,0.35)" stroke-width="1"/>
+        <text x="215" y="102" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="600" fill="#3fb950" text-anchor="middle">Step 1</text>
+
+        <!-- Arrow: Step 1 -> Step 2 -->
+        <path id="pe-p2" d="M255,97 L275,97" fill="none" stroke="#495670" stroke-width="1.5" marker-end="url(#pe-ah)"/>
+        <circle r="2" fill="#3fb950" opacity="0.8"><animateMotion dur="1.2s" repeatCount="indefinite"><mpath href="#pe-p2"/></animateMotion></circle>
+        <circle cx="265" cy="87" r="8" fill="#0a192f" stroke="#3fb950" stroke-width="1"/><text x="265" y="91" font-family="Inter, system-ui, sans-serif" font-size="8" font-weight="700" fill="#3fb950" text-anchor="middle">1</text>
+
+        <!-- NODE: Step 2 -->
+        <rect x="280" y="80" width="80" height="34" rx="8" fill="#161b22" stroke="rgba(63,185,80,0.35)" stroke-width="1"/>
+        <text x="320" y="102" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="600" fill="#3fb950" text-anchor="middle">Step 2</text>
+
+        <!-- Arrow: Step 2 -> Step 3 -->
+        <path id="pe-p3" d="M360,97 L380,97" fill="none" stroke="#495670" stroke-width="1.5" marker-end="url(#pe-ah)"/>
+        <circle r="2" fill="#3fb950" opacity="0.8"><animateMotion dur="1.2s" repeatCount="indefinite"><mpath href="#pe-p3"/></animateMotion></circle>
+        <circle cx="370" cy="87" r="8" fill="#0a192f" stroke="#3fb950" stroke-width="1"/><text x="370" y="91" font-family="Inter, system-ui, sans-serif" font-size="8" font-weight="700" fill="#3fb950" text-anchor="middle">2</text>
+
+        <!-- NODE: Step 3 -->
+        <rect x="385" y="80" width="80" height="34" rx="8" fill="#161b22" stroke="rgba(63,185,80,0.35)" stroke-width="1"/>
+        <text x="425" y="102" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="600" fill="#3fb950" text-anchor="middle">Step 3</text>
+
+        <!-- Arrow: Step 3 -> Step N -->
+        <path id="pe-p4" d="M465,97 L485,97" fill="none" stroke="#495670" stroke-width="1.5" marker-end="url(#pe-ah)"/>
+        <circle r="2" fill="#3fb950" opacity="0.8"><animateMotion dur="1.2s" repeatCount="indefinite"><mpath href="#pe-p4"/></animateMotion></circle>
+        <circle cx="475" cy="87" r="8" fill="#0a192f" stroke="#3fb950" stroke-width="1"/><text x="475" y="91" font-family="Inter, system-ui, sans-serif" font-size="8" font-weight="700" fill="#3fb950" text-anchor="middle">3</text>
+
+        <!-- NODE: Step N -->
+        <rect x="490" y="80" width="80" height="34" rx="8" fill="#161b22" stroke="rgba(63,185,80,0.35)" stroke-width="1"/>
+        <text x="530" y="102" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="600" fill="#3fb950" text-anchor="middle">Step N</text>
+
+        <!-- Arrow: Step N -> Result -->
+        <path id="pe-p5" d="M570,97 L605,97" fill="none" stroke="#495670" stroke-width="1.5" marker-end="url(#pe-ah-green)"/>
+        <circle r="2.5" fill="#3fb950" opacity="0.8"><animateMotion dur="1.5s" repeatCount="indefinite"><mpath href="#pe-p5"/></animateMotion></circle>
+
+        <!-- NODE: Result -->
+        <rect x="610" y="75" width="75" height="44" rx="10" fill="#161b22" stroke="rgba(63,185,80,0.4)" stroke-width="1.2"/>
+        <text x="647" y="93" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#495670" text-anchor="middle">&#x2705;</text>
+        <text x="647" y="110" font-family="Inter, system-ui, sans-serif" font-size="12" font-weight="600" fill="#3fb950" text-anchor="middle">Result</text>
+
+        <!-- Re-plan dashed arrow: from steps area back to Planner -->
+        <path id="pe-replan" d="M375,135 C375,175 200,190 80,119" fill="none" stroke="rgba(248,81,73,0.4)" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#pe-ah)"/>
+        <circle r="2.5" fill="#f85149" opacity="0.6"><animateMotion dur="3.5s" repeatCount="indefinite"><mpath href="#pe-replan"/></animateMotion></circle>
+
+        <!-- Re-plan label -->
+        <rect x="170" y="168" width="130" height="22" rx="11" fill="rgba(248,81,73,0.08)" stroke="rgba(248,81,73,0.2)" stroke-width="1"/>
+        <text x="235" y="183" font-family="JetBrains Mono, monospace" font-size="9" fill="#f85149" text-anchor="middle" letter-spacing="0.5">re-plan on failure</text>
+
+        <!-- Failure icon -->
+        <text x="365" y="155" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#f85149" text-anchor="middle" opacity="0.6">&#x26A0;&#xFE0F;</text>
+      </svg>
+      </div>
+      <p style="font-size:12px;color:var(--text-dim);margin-top:12px"><strong style="color:var(--text-sec)">Best for:</strong> Multi-step workflows, research tasks, data pipelines. More tokens upfront, better outcomes on complex tasks.</p>
+    </div>
+
+    <!-- Multi-Agent -->
+    <div class="arch-pattern fade-up">
+      <div class="pattern-header">
+        <div class="pattern-name">Multi-Agent</div>
+        <span class="pattern-tag" style="background:rgba(188,140,255,0.15);color:var(--multi)">Collaboration</span>
+      </div>
+      <div class="pattern-desc">
+        Multiple <span class="hi">specialized agents</span> collaborate on a task, each with its own system prompt, tools, and expertise. A supervisor agent routes sub-tasks to the right specialist. Agents communicate through a shared message bus or structured handoffs. Enables division of labor and tool isolation.
+      </div>
+      <div style="margin:16px 0;overflow-x:auto">
+      <svg viewBox="0 0 640 280" width="100%" style="max-width:640px;display:block;margin:0 auto" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="ma-ah" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#bc8cff"/></marker>
+          <marker id="ma-ah-up" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#495670"/></marker>
+        </defs>
+
+        <!-- Dashed container for worker agents -->
+        <rect x="30" y="120" width="580" height="145" rx="12" fill="rgba(188,140,255,0.04)" stroke="rgba(188,140,255,0.15)" stroke-width="1.5" stroke-dasharray="8 4"/>
+        <text x="320" y="140" font-family="JetBrains Mono, monospace" font-size="9" fill="#bc8cff" text-anchor="middle" letter-spacing="1" opacity="0.6">WORKER AGENTS</text>
+
+        <!-- NODE: Supervisor -->
+        <rect x="245" y="20" width="150" height="50" rx="10" fill="#161b22" stroke="rgba(188,140,255,0.5)" stroke-width="1.5"/>
+        <text x="320" y="42" font-family="Inter, system-ui, sans-serif" font-size="13" fill="#495670" text-anchor="middle">&#x1F451;</text>
+        <text x="320" y="60" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="700" fill="#bc8cff" text-anchor="middle">Supervisor</text>
+
+        <!-- Connection lines from Supervisor to each worker -->
+        <!-- Line to Coder -->
+        <path id="ma-p1" d="M280,70 C240,85 120,100 100,155" fill="none" stroke="rgba(188,140,255,0.35)" stroke-width="1.5" marker-end="url(#ma-ah)"/>
+        <circle r="2.5" fill="#bc8cff" opacity="0.7"><animateMotion dur="2s" repeatCount="indefinite"><mpath href="#ma-p1"/></animateMotion></circle>
+
+        <!-- Line to Tester -->
+        <path id="ma-p2" d="M300,70 C280,90 250,120 240,155" fill="none" stroke="rgba(188,140,255,0.35)" stroke-width="1.5" marker-end="url(#ma-ah)"/>
+        <circle r="2.5" fill="#bc8cff" opacity="0.7"><animateMotion dur="2.2s" repeatCount="indefinite"><mpath href="#ma-p2"/></animateMotion></circle>
+
+        <!-- Line to Reviewer -->
+        <path id="ma-p3" d="M340,70 C360,90 380,120 395,155" fill="none" stroke="rgba(188,140,255,0.35)" stroke-width="1.5" marker-end="url(#ma-ah)"/>
+        <circle r="2.5" fill="#bc8cff" opacity="0.7"><animateMotion dur="2.4s" repeatCount="indefinite"><mpath href="#ma-p3"/></animateMotion></circle>
+
+        <!-- Line to Deployer -->
+        <path id="ma-p4" d="M360,70 C400,85 500,100 535,155" fill="none" stroke="rgba(188,140,255,0.35)" stroke-width="1.5" marker-end="url(#ma-ah)"/>
+        <circle r="2.5" fill="#bc8cff" opacity="0.7"><animateMotion dur="2.6s" repeatCount="indefinite"><mpath href="#ma-p4"/></animateMotion></circle>
+
+        <!-- NODE: Coder -->
+        <rect x="50" y="155" width="100" height="55" rx="10" fill="#161b22" stroke="rgba(188,140,255,0.35)" stroke-width="1.2"/>
+        <text x="100" y="175" font-family="Inter, system-ui, sans-serif" font-size="12" font-weight="600" fill="#bc8cff" text-anchor="middle">&#x1F4BB; Coder</text>
+        <text x="100" y="198" font-family="JetBrains Mono, monospace" font-size="9" fill="#495670" text-anchor="middle">write + edit code</text>
+
+        <!-- NODE: Tester -->
+        <rect x="190" y="155" width="100" height="55" rx="10" fill="#161b22" stroke="rgba(188,140,255,0.35)" stroke-width="1.2"/>
+        <text x="240" y="175" font-family="Inter, system-ui, sans-serif" font-size="12" font-weight="600" fill="#bc8cff" text-anchor="middle">&#x1F9EA; Tester</text>
+        <text x="240" y="198" font-family="JetBrains Mono, monospace" font-size="9" fill="#495670" text-anchor="middle">run tests + report</text>
+
+        <!-- NODE: Reviewer -->
+        <rect x="345" y="155" width="100" height="55" rx="10" fill="#161b22" stroke="rgba(188,140,255,0.35)" stroke-width="1.2"/>
+        <text x="395" y="175" font-family="Inter, system-ui, sans-serif" font-size="12" font-weight="600" fill="#bc8cff" text-anchor="middle">&#x1F50D; Reviewer</text>
+        <text x="395" y="198" font-family="JetBrains Mono, monospace" font-size="9" fill="#495670" text-anchor="middle">review + approve</text>
+
+        <!-- NODE: Deployer -->
+        <rect x="487" y="155" width="100" height="55" rx="10" fill="#161b22" stroke="rgba(188,140,255,0.35)" stroke-width="1.2"/>
+        <text x="537" y="175" font-family="Inter, system-ui, sans-serif" font-size="12" font-weight="600" fill="#bc8cff" text-anchor="middle">&#x1F680; Deployer</text>
+        <text x="537" y="198" font-family="JetBrains Mono, monospace" font-size="9" fill="#495670" text-anchor="middle">CI/CD + rollout</text>
+
+        <!-- Return arrows (dashed, dim) back to supervisor -->
+        <path d="M100,155 C100,110 250,80 260,70" fill="none" stroke="rgba(188,140,255,0.15)" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#ma-ah-up)"/>
+        <path d="M240,155 C240,120 280,90 290,70" fill="none" stroke="rgba(188,140,255,0.15)" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#ma-ah-up)"/>
+        <path d="M395,155 C395,120 360,90 350,70" fill="none" stroke="rgba(188,140,255,0.15)" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#ma-ah-up)"/>
+        <path d="M537,155 C537,110 390,80 380,70" fill="none" stroke="rgba(188,140,255,0.15)" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#ma-ah-up)"/>
+
+        <!-- Labels for direction -->
+        <text x="150" y="100" font-family="JetBrains Mono, monospace" font-size="8" fill="#495670" text-anchor="middle" opacity="0.6">delegate</text>
+        <text x="490" y="100" font-family="JetBrains Mono, monospace" font-size="8" fill="#495670" text-anchor="middle" opacity="0.6">delegate</text>
+        <text x="215" y="247" font-family="JetBrains Mono, monospace" font-size="8" fill="#495670" text-anchor="middle" opacity="0.5">report</text>
+        <text x="460" y="247" font-family="JetBrains Mono, monospace" font-size="8" fill="#495670" text-anchor="middle" opacity="0.5">report</text>
+
+        <!-- Horizontal communication line between workers -->
+        <line x1="150" y1="240" x2="487" y2="240" stroke="rgba(188,140,255,0.1)" stroke-width="1" stroke-dasharray="3 4"/>
+        <text x="320" y="253" font-family="JetBrains Mono, monospace" font-size="8" fill="#bc8cff" text-anchor="middle" opacity="0.4">shared message bus</text>
+      </svg>
+      </div>
+      <p style="font-size:12px;color:var(--text-dim);margin-top:12px"><strong style="color:var(--text-sec)">Best for:</strong> Software development, complex analysis, tasks requiring multiple domains of expertise.</p>
+    </div>
+
+    <!-- Hierarchical -->
+    <div class="arch-pattern fade-up">
+      <div class="pattern-header">
+        <div class="pattern-name">Hierarchical</div>
+        <span class="pattern-tag" style="background:rgba(210,153,34,0.15);color:var(--hier)">Delegation Tree</span>
+      </div>
+      <div class="pattern-desc">
+        A <span class="hi">tree of agents</span> with explicit delegation. Manager agents decompose work and spawn worker agents, which may themselves delegate further. Each level has its own context window, tools, and permission scope. Enables deep specialization while keeping each agent's context focused.
+      </div>
+      <div style="margin:16px 0;overflow-x:auto">
+      <svg viewBox="0 0 640 310" width="100%" style="max-width:640px;display:block;margin:0 auto" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="ht-ah" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#d29922"/></marker>
+        </defs>
+
+        <!-- Dashed container: Team A -->
+        <rect x="30" y="130" width="270" height="165" rx="12" fill="rgba(210,153,34,0.04)" stroke="rgba(210,153,34,0.15)" stroke-width="1.5" stroke-dasharray="8 4"/>
+        <text x="165" y="150" font-family="JetBrains Mono, monospace" font-size="9" fill="#d29922" text-anchor="middle" letter-spacing="1" opacity="0.6">TEAM A</text>
+
+        <!-- Dashed container: Team B -->
+        <rect x="340" y="130" width="270" height="165" rx="12" fill="rgba(210,153,34,0.04)" stroke="rgba(210,153,34,0.15)" stroke-width="1.5" stroke-dasharray="8 4"/>
+        <text x="475" y="150" font-family="JetBrains Mono, monospace" font-size="9" fill="#d29922" text-anchor="middle" letter-spacing="1" opacity="0.6">TEAM B</text>
+
+        <!-- NODE: Manager (top center) -->
+        <rect x="255" y="15" width="130" height="48" rx="10" fill="#161b22" stroke="rgba(210,153,34,0.5)" stroke-width="1.5"/>
+        <text x="320" y="36" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#495670" text-anchor="middle">&#x1F4BC;</text>
+        <text x="320" y="53" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="700" fill="#d29922" text-anchor="middle">Manager</text>
+
+        <!-- Lines from Manager to Team Leads -->
+        <path id="ht-p1" d="M285,63 C240,85 190,110 170,155" fill="none" stroke="rgba(210,153,34,0.4)" stroke-width="1.5" marker-end="url(#ht-ah)"/>
+        <circle r="2.5" fill="#d29922" opacity="0.7"><animateMotion dur="2s" repeatCount="indefinite"><mpath href="#ht-p1"/></animateMotion></circle>
+
+        <path id="ht-p2" d="M355,63 C400,85 450,110 470,155" fill="none" stroke="rgba(210,153,34,0.4)" stroke-width="1.5" marker-end="url(#ht-ah)"/>
+        <circle r="2.5" fill="#d29922" opacity="0.7"><animateMotion dur="2.2s" repeatCount="indefinite"><mpath href="#ht-p2"/></animateMotion></circle>
+
+        <!-- NODE: Team Lead A -->
+        <rect x="105" y="155" width="125" height="44" rx="10" fill="#161b22" stroke="rgba(210,153,34,0.4)" stroke-width="1.2"/>
+        <text x="167" y="174" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#495670" text-anchor="middle">&#x1F465;</text>
+        <text x="167" y="191" font-family="Inter, system-ui, sans-serif" font-size="12" font-weight="600" fill="#d29922" text-anchor="middle">Team Lead A</text>
+
+        <!-- NODE: Team Lead B -->
+        <rect x="410" y="155" width="125" height="44" rx="10" fill="#161b22" stroke="rgba(210,153,34,0.4)" stroke-width="1.2"/>
+        <text x="472" y="174" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#495670" text-anchor="middle">&#x1F465;</text>
+        <text x="472" y="191" font-family="Inter, system-ui, sans-serif" font-size="12" font-weight="600" fill="#d29922" text-anchor="middle">Team Lead B</text>
+
+        <!-- Lines from Team Lead A to Workers 1 & 2 -->
+        <path id="ht-p3" d="M140,199 C120,215 95,230 95,245" fill="none" stroke="rgba(210,153,34,0.3)" stroke-width="1.2" marker-end="url(#ht-ah)"/>
+        <circle r="2" fill="#d29922" opacity="0.6"><animateMotion dur="1.8s" repeatCount="indefinite"><mpath href="#ht-p3"/></animateMotion></circle>
+
+        <path id="ht-p4" d="M195,199 C215,215 235,230 235,245" fill="none" stroke="rgba(210,153,34,0.3)" stroke-width="1.2" marker-end="url(#ht-ah)"/>
+        <circle r="2" fill="#d29922" opacity="0.6"><animateMotion dur="1.8s" repeatCount="indefinite"><mpath href="#ht-p4"/></animateMotion></circle>
+
+        <!-- Lines from Team Lead B to Workers 3 & 4 -->
+        <path id="ht-p5" d="M445,199 C425,215 405,230 405,245" fill="none" stroke="rgba(210,153,34,0.3)" stroke-width="1.2" marker-end="url(#ht-ah)"/>
+        <circle r="2" fill="#d29922" opacity="0.6"><animateMotion dur="1.8s" repeatCount="indefinite"><mpath href="#ht-p5"/></animateMotion></circle>
+
+        <path id="ht-p6" d="M500,199 C520,215 540,230 540,245" fill="none" stroke="rgba(210,153,34,0.3)" stroke-width="1.2" marker-end="url(#ht-ah)"/>
+        <circle r="2" fill="#d29922" opacity="0.6"><animateMotion dur="1.8s" repeatCount="indefinite"><mpath href="#ht-p6"/></animateMotion></circle>
+
+        <!-- NODE: Worker 1 -->
+        <rect x="50" y="245" width="90" height="36" rx="8" fill="#161b22" stroke="rgba(210,153,34,0.2)" stroke-width="1"/>
+        <text x="95" y="268" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#a8b2d1" text-anchor="middle">&#x2699;&#xFE0F; Worker 1</text>
+
+        <!-- NODE: Worker 2 -->
+        <rect x="190" y="245" width="90" height="36" rx="8" fill="#161b22" stroke="rgba(210,153,34,0.2)" stroke-width="1"/>
+        <text x="235" y="268" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#a8b2d1" text-anchor="middle">&#x2699;&#xFE0F; Worker 2</text>
+
+        <!-- NODE: Worker 3 -->
+        <rect x="360" y="245" width="90" height="36" rx="8" fill="#161b22" stroke="rgba(210,153,34,0.2)" stroke-width="1"/>
+        <text x="405" y="268" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#a8b2d1" text-anchor="middle">&#x2699;&#xFE0F; Worker 3</text>
+
+        <!-- NODE: Worker 4 -->
+        <rect x="495" y="245" width="90" height="36" rx="8" fill="#161b22" stroke="rgba(210,153,34,0.2)" stroke-width="1"/>
+        <text x="540" y="268" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#a8b2d1" text-anchor="middle">&#x2699;&#xFE0F; Worker 4</text>
+
+        <!-- Numbered step circles on main arrows -->
+        <circle cx="230" cy="90" r="10" fill="#0a192f" stroke="#d29922" stroke-width="1.2"/><text x="230" y="94" font-family="Inter, system-ui, sans-serif" font-size="9" font-weight="700" fill="#d29922" text-anchor="middle">1</text>
+        <circle cx="410" cy="90" r="10" fill="#0a192f" stroke="#d29922" stroke-width="1.2"/><text x="410" y="94" font-family="Inter, system-ui, sans-serif" font-size="9" font-weight="700" fill="#d29922" text-anchor="middle">2</text>
+      </svg>
+      </div>
+      <p style="font-size:12px;color:var(--text-dim);margin-top:12px"><strong style="color:var(--text-sec)">Best for:</strong> Enterprise workflows, large codebases, tasks that naturally decompose into independent sub-problems.</p>
+    </div>
+
+    <div class="callout fade-up">
+      <strong>Pattern selection heuristic:</strong> Start with ReAct. If the task has more than 5 steps, try Plan-and-Execute. If it needs multiple tools with different permission scopes, use Multi-Agent. If sub-tasks are themselves complex multi-step problems, go Hierarchical. Simpler is always better &mdash; every layer of indirection adds latency and failure modes.
+    </div>
+  </section>
+
+  <!-- ======================================================== -->
+  <!-- TOOL USE -->
+  <!-- ======================================================== -->
+  <section id="tools">
+    <div class="section-title fade-up">Tool Use &amp; Function Calling</div>
+    <p class="fade-up" style="margin-bottom:24px;color:var(--text-sec)">
+      Function calling is the mechanism that bridges the gap between <span class="hi">language generation</span> and <span class="hi">real-world action</span>. The model doesn't execute code directly &mdash; it generates a structured request that the runtime executes on its behalf. This separation is what makes agents both powerful and controllable.
+    </p>
+
+    <!-- Tool Call Flow -->
+    <div class="fade-up" style="margin-bottom:24px">
+      <p style="font-size:14px;font-weight:600;color:var(--white);margin-bottom:16px">How a Tool Call Works</p>
+      <div class="tool-call-viz">
+        <div class="tc-block tc-system">
+          <div class="tc-role" style="color:var(--text-dim)">1. System &mdash; Tool Definition</div>
+          <div class="tc-content">
+<pre><code>{
+  "name": "query_database",
+  "description": "Execute a read-only SQL query",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "sql": { "type": "string", "description": "SQL SELECT query" },
+      "database": { "type": "string", "enum": ["analytics", "users"] }
+    },
+    "required": ["sql", "database"]
+  }
+}</code></pre>
+          </div>
+        </div>
+
+        <div class="tc-connector"><div class="tc-arrow"></div></div>
+
+        <div class="tc-block tc-model">
+          <div class="tc-role" style="color:var(--react)">2. Model &mdash; Tool Call</div>
+          <div class="tc-content">
+<pre><code>{
+  "type": "tool_use",
+  "name": "query_database",
+  "input": {
+    "sql": "SELECT COUNT(*) as active_users FROM users WHERE last_seen > NOW() - INTERVAL '7 days'",
+    "database": "users"
+  }
+}</code></pre>
+          </div>
+        </div>
+
+        <div class="tc-connector"><div class="tc-arrow"></div></div>
+
+        <div class="tc-block tc-runtime">
+          <div class="tc-role" style="color:var(--plan)">3. Runtime &mdash; Execution</div>
+          <div class="tc-content">Runtime validates arguments against JSON Schema, checks permissions, executes the query against the database, captures the result.</div>
+        </div>
+
+        <div class="tc-connector"><div class="tc-arrow"></div></div>
+
+        <div class="tc-block tc-result">
+          <div class="tc-role" style="color:var(--accent)">4. Result &mdash; Back to Model</div>
+          <div class="tc-content">
+<pre><code>{
+  "type": "tool_result",
+  "content": "[{\"active_users\": 14832}]"
+}</code></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-grid two-col fade-up">
+      <div class="card">
+        <div class="card-title">Parallel Tool Calling</div>
+        <p style="margin-bottom:10px">Models can request <span class="hi">multiple tool calls in a single turn</span> when the calls are independent. The runtime executes them concurrently and returns all results at once.</p>
+        <ul>
+          <li>Reduces round trips &mdash; 3 API lookups in 1 turn</li>
+          <li>Model decides independence (no shared state)</li>
+          <li>Runtime collects results, returns as array</li>
+          <li>Falls back to sequential if dependencies exist</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-title">Error Handling</div>
+        <p style="margin-bottom:10px">Tool calls fail. Good agents handle failures gracefully with a <span class="hi">retry &rarr; fallback &rarr; escalate</span> strategy.</p>
+        <ul>
+          <li><strong style="color:var(--white)">Retry:</strong> Transient errors (timeout, rate limit) &mdash; wait and retry</li>
+          <li><strong style="color:var(--white)">Reformulate:</strong> Bad arguments &mdash; fix based on error message</li>
+          <li><strong style="color:var(--white)">Fallback:</strong> Try an alternative tool or approach</li>
+          <li><strong style="color:var(--white)">Escalate:</strong> Ask the user for help or clarification</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout fade-up">
+      <strong>Tool design matters more than model choice.</strong> A well-described tool with clear parameter names, tight JSON Schema constraints, and helpful error messages will work reliably across models. A vaguely described tool will fail even with the best model. Write tool descriptions like API documentation for a junior developer &mdash; explicit, unambiguous, with examples in the description.
+    </div>
+
+    <div class="card-grid fade-up" style="margin-top:16px">
+      <div class="card">
+        <div class="card-title">Tool Definition Best Practices</div>
+        <ul>
+          <li>Use descriptive names: <code>search_orders</code> not <code>tool_1</code></li>
+          <li>Include parameter descriptions with examples</li>
+          <li>Use <code>enum</code> to constrain categorical inputs</li>
+          <li>Mark required vs optional clearly</li>
+          <li>Keep tool count under 20 per agent turn</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-title">MCP (Model Context Protocol)</div>
+        <ul>
+          <li>Standardized protocol for tool registration</li>
+          <li>Server exposes tools, resources, prompts</li>
+          <li>Client connects over stdio or SSE transport</li>
+          <li>Tools auto-discovered at connection time</li>
+          <li>One server can serve multiple agent frameworks</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-title">Tool Result Formatting</div>
+        <ul>
+          <li>Return structured data (JSON), not prose</li>
+          <li>Include metadata: row count, truncation flag</li>
+          <li>Cap result size to avoid context overflow</li>
+          <li>Return errors as structured objects, not exceptions</li>
+          <li>Paginate large results with cursor tokens</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================== -->
+  <!-- ORCHESTRATION -->
+  <!-- ======================================================== -->
+  <section id="orchestration">
+    <div class="section-title fade-up">Orchestration Frameworks</div>
+    <p class="fade-up" style="margin-bottom:24px;color:var(--text-sec)">
+      Orchestration frameworks handle the plumbing: <span class="hi">state management</span>, <span class="hi">tool execution</span>, <span class="hi">agent coordination</span>, and <span class="hi">persistence</span>. They differ significantly in their execution model, state management approach, and target use cases. Choosing the right one depends on whether you need graphs, conversations, or simple tool loops.
+    </p>
+
+    <div class="fade-up" style="overflow-x:auto">
+    <table class="comp-table">
+      <thead>
+        <tr>
+          <th>Framework</th>
+          <th>Model</th>
+          <th>State</th>
+          <th>Multi-Agent</th>
+          <th>Strengths</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="hi">LangGraph</span></td>
+          <td>Graph-based state machines</td>
+          <td>Persistent checkpoints</td>
+          <td>Nested graphs, subgraphs</td>
+          <td>Cycles, branching, human-in-the-loop</td>
+        </tr>
+        <tr>
+          <td><span class="hi">CrewAI</span></td>
+          <td>Role-based crews</td>
+          <td>Shared crew memory</td>
+          <td>Built-in role delegation</td>
+          <td>Declarative task definitions, fast setup</td>
+        </tr>
+        <tr>
+          <td><span class="hi">Autogen</span></td>
+          <td>Multi-agent conversations</td>
+          <td>Chat history</td>
+          <td>Native group chat</td>
+          <td>Conversational agents, code execution</td>
+        </tr>
+        <tr>
+          <td><span class="hi">Claude Agent SDK</span></td>
+          <td>Tool runner loop</td>
+          <td>Message history</td>
+          <td>Agent handoff primitives</td>
+          <td>First-party Claude integration, MCP support</td>
+        </tr>
+        <tr>
+          <td><span class="hi">Google ADK</span></td>
+          <td>Agent &rarr; Tool pipeline</td>
+          <td>Session-based</td>
+          <td>Agent composition</td>
+          <td>Vertex AI integration, BigQuery toolset</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+
+    <div class="card-grid two-col fade-up" style="margin-top:24px">
+      <div class="card">
+        <div class="card-title">LangGraph</div>
+        <p style="margin-bottom:10px">Models agent workflows as <span class="hi">directed graphs with cycles</span>. Nodes are functions (LLM calls, tool executions, routing logic). Edges define transitions. State is a typed dictionary that flows through the graph.</p>
+        <ul>
+          <li>Supports cycles &mdash; agent can loop back to re-plan</li>
+          <li>Checkpointing for pause/resume and time-travel debugging</li>
+          <li>Subgraphs enable hierarchical composition</li>
+          <li>Human-in-the-loop via <code>interrupt_before</code> / <code>interrupt_after</code></li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-title">CrewAI</div>
+        <p style="margin-bottom:10px">Define agents as <span class="hi">roles with goals</span>, then assign them tasks. The framework handles delegation, context sharing, and execution order. Feels like managing a team.</p>
+        <ul>
+          <li>Declarative: define agents and tasks in YAML or Python</li>
+          <li>Built-in role-based delegation (manager &rarr; worker)</li>
+          <li>Shared memory across crew members</li>
+          <li>Sequential or hierarchical process modes</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-title">Autogen</div>
+        <p style="margin-bottom:10px">Microsoft's framework for <span class="hi">multi-agent conversations</span>. Agents talk to each other in a group chat, with a manager deciding who speaks next.</p>
+        <ul>
+          <li>Group chat with speaker selection</li>
+          <li>Code execution via Docker sandboxes</li>
+          <li>Nested chat for hierarchical delegation</li>
+          <li>Teachable agents that learn from feedback</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-title">Claude Agent SDK</div>
+        <p style="margin-bottom:10px">Anthropic's official SDK for building agents with Claude. The <span class="hi">tool_runner</span> pattern handles the observe-act loop, and handoffs enable multi-agent coordination.</p>
+        <ul>
+          <li>First-class MCP server integration</li>
+          <li><code>client.messages.tool_runner()</code> handles the full loop</li>
+          <li>Agent handoffs with context transfer</li>
+          <li>Built-in guardrails and content filtering</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-title">Google ADK</div>
+        <p style="margin-bottom:10px"><span class="hi">Agent Development Kit</span> with tight Vertex AI integration. Agents compose with tools, sub-agents, and Google Cloud services.</p>
+        <ul>
+          <li>BigQuery and Vertex AI toolsets built in</li>
+          <li>Session-based state management</li>
+          <li>Agent composition with explicit routing</li>
+          <li>Deploy to Vertex AI Agent Engine</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout fade-up">
+      <strong>Framework selection:</strong> If you need complex branching and human-in-the-loop, use LangGraph. If you want fast multi-agent setup with minimal code, try CrewAI. If you're building on Claude, the Agent SDK gives you the tightest integration. If you're in the Google Cloud ecosystem, ADK connects natively. And if your agents need to debate each other, Autogen's conversational model is purpose-built for that.
+    </div>
+  </section>
+
+  <!-- ======================================================== -->
+  <!-- MEMORY -->
+  <!-- ======================================================== -->
+  <section id="memory">
+    <div class="section-title fade-up">Agent Memory Systems</div>
+    <p class="fade-up" style="margin-bottom:24px;color:var(--text-sec)">
+      Memory is what separates a <span class="hi">useful agent</span> from a forgetful chatbot. Without memory, every interaction starts from zero. With the right memory architecture, agents learn from past actions, maintain context across long tasks, and adapt to user preferences over time. Five memory types serve different temporal and functional needs.
+    </p>
+
+    <div class="memory-grid fade-up">
+      <div class="memory-card" style="border-color:rgba(88,166,255,0.3)">
+        <div class="mem-name" style="color:var(--react)">Conversation Memory</div>
+        <div class="mem-scope" style="color:var(--react)">Within session</div>
+        <div class="mem-desc">The chat history. Every message, tool call, and result in the current conversation. The most basic form of memory &mdash; but context windows are finite.</div>
+        <div class="mem-impl">Sliding window (keep last N turns) or summarization (compress old messages)</div>
+      </div>
+      <div class="memory-card" style="border-color:rgba(63,185,80,0.3)">
+        <div class="mem-name" style="color:var(--plan)">Semantic Memory</div>
+        <div class="mem-scope" style="color:var(--plan)">Cross-session</div>
+        <div class="mem-desc">Past interactions embedded into a vector store. The agent retrieves relevant memories by semantic similarity. Enables "I remember we discussed X last week."</div>
+        <div class="mem-impl">Embed messages &rarr; store in pgvector/Pinecone/Chroma &rarr; RAG retrieval</div>
+      </div>
+      <div class="memory-card" style="border-color:rgba(188,140,255,0.3)">
+        <div class="mem-name" style="color:var(--multi)">Episodic Memory</div>
+        <div class="mem-scope" style="color:var(--multi)">Cross-session</div>
+        <div class="mem-desc">Structured records of past <em>actions and outcomes</em>. Not free-text &mdash; structured data: "Ran deploy at 3pm, failed with OOM, fixed by increasing memory to 4GB."</div>
+        <div class="mem-impl">Structured logs in a database &mdash; action, params, result, timestamp</div>
+      </div>
+      <div class="memory-card" style="border-color:rgba(210,153,34,0.3)">
+        <div class="mem-name" style="color:var(--hier)">Working Memory</div>
+        <div class="mem-scope" style="color:var(--hier)">Within task</div>
+        <div class="mem-desc">A scratchpad for the current task. The agent writes notes to itself: intermediate results, partial plans, variables to track. Survives tool calls but not session restarts.</div>
+        <div class="mem-impl">Key-value store or markdown scratchpad injected into system prompt</div>
+      </div>
+      <div class="memory-card" style="border-color:rgba(57,210,192,0.3)">
+        <div class="mem-name" style="color:var(--tool)">Persistent Memory</div>
+        <div class="mem-scope" style="color:var(--tool)">Permanent</div>
+        <div class="mem-desc">Long-lived knowledge that spans all sessions: user preferences, project conventions, learned patterns. The agent's accumulated expertise.</div>
+        <div class="mem-impl">Entity store, knowledge graph, or flat files (e.g., MEMORY.md, CLAUDE.md)</div>
+      </div>
+    </div>
+
+    <div class="callout fade-up">
+      <strong>The memory hierarchy in practice:</strong> A coding agent's conversation memory holds the current file edits. Its working memory tracks "which tests are failing." Its episodic memory records "last time I edited this file, the linter failed because of trailing whitespace." Its semantic memory retrieves "the user prefers functional style over classes." Its persistent memory knows "this project uses pytest, not unittest." Each layer reduces wasted work and repeated mistakes.
+    </div>
+
+    <p class="fade-up" style="margin-top:20px;color:var(--text-sec)">
+      <span class="hi">Context window management</span> is the critical constraint. A 200K-token context window sounds large, but a complex agent session with tool results can fill it in under 50 turns. Strategies for staying under the limit:
+    </p>
+
+    <div class="card-grid fade-up" style="margin-top:16px">
+      <div class="card">
+        <div class="card-title">Sliding Window</div>
+        <ul>
+          <li>Keep the last N messages</li>
+          <li>Simple but loses important early context</li>
+          <li>Works for short, focused tasks</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-title">Summarization</div>
+        <ul>
+          <li>Periodically summarize old messages</li>
+          <li>Preserves key decisions and findings</li>
+          <li>Lossy &mdash; details get compressed out</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-title">Delegation</div>
+        <ul>
+          <li>Spawn sub-agents for sub-tasks</li>
+          <li>Each gets its own fresh context window</li>
+          <li>Parent receives only the summary result</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================== -->
+  <!-- GUARDRAILS -->
+  <!-- ======================================================== -->
+  <section id="guardrails">
+    <div class="section-title fade-up">Guardrails &amp; Safety</div>
+    <p class="fade-up" style="margin-bottom:24px;color:var(--text-sec)">
+      An agent with tools is an agent with <span class="hi">real-world consequences</span>. It can delete files, send emails, execute queries, and modify infrastructure. Guardrails are not optional &mdash; they are the engineering that makes agents safe to deploy. Defense in depth: <span class="ac">every layer assumes the layer above it has failed</span>.
+    </p>
+
+    <div class="guard-stack fade-up">
+      <div class="guard-card">
+        <div class="guard-num" style="background:rgba(248,81,73,0.15);color:var(--guard)">1</div>
+        <div class="guard-content">
+          <div class="guard-title">Input Validation</div>
+          <div class="guard-desc">
+            <span class="hi">Prompt injection detection</span> before the input reaches the model. Content filtering for PII, sensitive data, and adversarial payloads. Input sanitization strips control characters and encoding attacks. A separate classifier model can score injection likelihood before the main model processes the prompt.
+          </div>
+        </div>
+      </div>
+      <div class="guard-card">
+        <div class="guard-num" style="background:rgba(248,81,73,0.15);color:var(--guard)">2</div>
+        <div class="guard-content">
+          <div class="guard-title">Output Validation</div>
+          <div class="guard-desc">
+            <span class="hi">Schema enforcement</span> on every tool call &mdash; validate arguments against JSON Schema before execution. Fact-checking assertions against known data. Content moderation on generated text. Output length limits to prevent runaway generation. A second LLM call can review the output before it's returned to the user.
+          </div>
+        </div>
+      </div>
+      <div class="guard-card">
+        <div class="guard-num" style="background:rgba(248,81,73,0.15);color:var(--guard)">3</div>
+        <div class="guard-content">
+          <div class="guard-title">Sandboxing &amp; Permissions</div>
+          <div class="guard-desc">
+            Tool execution in <span class="hi">isolated containers</span> with minimal permissions. Read-only database connections for query tools. File system access scoped to specific directories. Network egress filtered by allowlist. Each tool declares its permission requirements; the runtime enforces them regardless of what the model requests.
+          </div>
+        </div>
+      </div>
+      <div class="guard-card">
+        <div class="guard-num" style="background:rgba(210,153,34,0.15);color:var(--hier)">4</div>
+        <div class="guard-content">
+          <div class="guard-title">Rate Limiting &amp; Cost Control</div>
+          <div class="guard-desc">
+            <span class="hi">Per-session token budgets</span> to prevent runaway agents. Tool call rate limits (max N calls per minute). Cost caps per user, per task, and per day. Circuit breakers that kill the agent loop after N consecutive failures. Billing alerts when spend exceeds thresholds.
+          </div>
+        </div>
+      </div>
+      <div class="guard-card">
+        <div class="guard-num" style="background:rgba(63,185,80,0.15);color:var(--plan)">5</div>
+        <div class="guard-content">
+          <div class="guard-title">Human-in-the-Loop</div>
+          <div class="guard-desc">
+            <span class="hi">Approval gates</span> before destructive actions. The agent pauses and presents its plan: "I'm about to delete 3 files and push to main. Approve?" Configurable per tool &mdash; read operations auto-approved, write operations require confirmation. Escalation paths for ambiguous situations where the model is uncertain.
+          </div>
+        </div>
+      </div>
+      <div class="guard-card">
+        <div class="guard-num" style="background:rgba(88,166,255,0.15);color:var(--react)">6</div>
+        <div class="guard-content">
+          <div class="guard-title">Monitoring &amp; Observability</div>
+          <div class="guard-desc">
+            <span class="hi">Trace every tool call</span>: input, output, latency, cost. Log every LLM decision with the reasoning that led to it. Structured traces (OpenTelemetry spans) for the full agent loop. Dashboards for token usage, error rates, and tool call patterns. Alerting on anomalies &mdash; sudden spike in API calls, unexpected tool invocations, or cost overruns.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout warn fade-up">
+      <strong>The permission model is the guardrail.</strong> The single most important design decision is what tools the agent can access and what those tools can do. A <code>query_database</code> tool that accepts arbitrary SQL is fundamentally different from one that only accepts parameterized queries against predefined views. The model will eventually try to do something unexpected &mdash; the tool's permission scope determines whether that's harmless or catastrophic.
+    </div>
+
+    <pre class="fade-up"><code><span style="color:var(--text-dim)">// Example: Permission-scoped tool definition</span>
+{
+  "name": "modify_user",
+  "allowed_operations": ["update_email", "reset_password"],
+  "blocked_operations": ["delete_account", "change_role"],
+  "requires_approval": ["reset_password"],
+  "max_calls_per_session": 5,
+  "audit_log": true
+}</code></pre>
+  </section>
+
+  <!-- ======================================================== -->
+  <!-- PATTERNS -->
+  <!-- ======================================================== -->
+  <section id="patterns">
+    <div class="section-title fade-up">Real-World Agent Patterns</div>
+    <p class="fade-up" style="margin-bottom:24px;color:var(--text-sec)">
+      Theory becomes useful when applied. These four patterns appear repeatedly across production agent systems. Each follows the same core loop &mdash; observe, reason, act &mdash; but adapts it to a specific domain with domain-specific tools, evaluation criteria, and termination conditions.
+    </p>
+
+    <!-- Code Generation Agent -->
+    <div class="pattern-card fade-up">
+      <div class="pc-header">
+        <div class="pc-name">Code Generation Agent</div>
+        <span class="pc-tag" style="background:rgba(88,166,255,0.15);color:var(--react)">Write &rarr; Test &rarr; Fix</span>
+      </div>
+      <div class="pc-desc">
+        The agent receives a feature request or bug report. It reads the relevant code, writes a solution, runs the test suite, reads any failures, and iterates until tests pass. The <span class="hi">test suite is the oracle</span> &mdash; it provides an objective signal for whether the agent's work is correct, removing the need for human evaluation on each iteration.
+      </div>
+      <div class="fade-up" style="margin:24px 0;overflow-x:auto">
+        <svg viewBox="0 0 720 200" width="100%" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, sans-serif">
+          <defs>
+            <marker id="cg-ah" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#58a6ff"/></marker>
+            <marker id="cg-ah-red" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#f85149"/></marker>
+            <marker id="cg-ah-green" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#3fb950"/></marker>
+          </defs>
+          <!-- Dashed container -->
+          <rect x="4" y="4" width="712" height="192" rx="12" fill="rgba(88,166,255,0.04)" stroke="rgba(88,166,255,0.15)" stroke-width="1.5" stroke-dasharray="8 4"/>
+          <!-- Nodes -->
+          <rect x="24" y="50" width="95" height="42" rx="10" fill="#161b22" stroke="rgba(88,166,255,0.4)" stroke-width="1.2"/>
+          <text x="71" y="75" fill="#58a6ff" font-size="11" font-weight="600" text-anchor="middle">&#x1F4D6; Read Code</text>
+          <rect x="148" y="50" width="95" height="42" rx="10" fill="#161b22" stroke="rgba(88,166,255,0.4)" stroke-width="1.2"/>
+          <text x="195" y="75" fill="#58a6ff" font-size="11" font-weight="600" text-anchor="middle">&#x270F;&#xFE0F; Write Fix</text>
+          <rect x="272" y="50" width="95" height="42" rx="10" fill="#161b22" stroke="rgba(88,166,255,0.4)" stroke-width="1.2"/>
+          <text x="319" y="75" fill="#58a6ff" font-size="11" font-weight="600" text-anchor="middle">&#x1F9EA; Run Tests</text>
+          <rect x="396" y="50" width="78" height="42" rx="10" fill="#161b22" stroke="rgba(248,81,73,0.4)" stroke-width="1.2"/>
+          <text x="435" y="75" fill="#f85149" font-size="11" font-weight="600" text-anchor="middle">&#x274C; Fail?</text>
+          <rect x="503" y="50" width="105" height="42" rx="10" fill="#161b22" stroke="rgba(248,81,73,0.4)" stroke-width="1.2"/>
+          <text x="555" y="75" fill="#f85149" font-size="11" font-weight="600" text-anchor="middle">&#x1F4CB; Read Errors</text>
+          <rect x="637" y="50" width="60" height="42" rx="10" fill="#161b22" stroke="rgba(63,185,80,0.4)" stroke-width="1.2"/>
+          <text x="667" y="75" fill="#3fb950" font-size="12" font-weight="700" text-anchor="middle">&#x2705; Fix</text>
+          <!-- Forward arrows with colored strokes and animated dots -->
+          <path id="cg-p1" d="M119,71 L148,71" fill="none" stroke="#58a6ff" stroke-width="1.5" marker-end="url(#cg-ah)"/>
+          <circle r="2.5" fill="#58a6ff" opacity="0.8"><animateMotion dur="1.5s" repeatCount="indefinite"><mpath href="#cg-p1"/></animateMotion></circle>
+          <circle cx="133" cy="61" r="10" fill="#0a192f" stroke="#58a6ff" stroke-width="1.2"/><text x="133" y="64.5" fill="#58a6ff" font-size="9" font-weight="700" text-anchor="middle">1</text>
+          <path id="cg-p2" d="M243,71 L272,71" fill="none" stroke="#58a6ff" stroke-width="1.5" marker-end="url(#cg-ah)"/>
+          <circle r="2.5" fill="#58a6ff" opacity="0.8"><animateMotion dur="1.5s" repeatCount="indefinite"><mpath href="#cg-p2"/></animateMotion></circle>
+          <circle cx="257" cy="61" r="10" fill="#0a192f" stroke="#58a6ff" stroke-width="1.2"/><text x="257" y="64.5" fill="#58a6ff" font-size="9" font-weight="700" text-anchor="middle">2</text>
+          <path id="cg-p3" d="M367,71 L396,71" fill="none" stroke="#f85149" stroke-width="1.5" marker-end="url(#cg-ah-red)"/>
+          <circle r="2.5" fill="#f85149" opacity="0.8"><animateMotion dur="1.5s" repeatCount="indefinite"><mpath href="#cg-p3"/></animateMotion></circle>
+          <circle cx="381" cy="61" r="10" fill="#0a192f" stroke="#f85149" stroke-width="1.2"/><text x="381" y="64.5" fill="#f85149" font-size="9" font-weight="700" text-anchor="middle">3</text>
+          <path id="cg-p4" d="M474,71 L503,71" fill="none" stroke="#f85149" stroke-width="1.5" marker-end="url(#cg-ah-red)"/>
+          <circle r="2.5" fill="#f85149" opacity="0.8"><animateMotion dur="1.5s" repeatCount="indefinite"><mpath href="#cg-p4"/></animateMotion></circle>
+          <circle cx="488" cy="61" r="10" fill="#0a192f" stroke="#f85149" stroke-width="1.2"/><text x="488" y="64.5" fill="#f85149" font-size="9" font-weight="700" text-anchor="middle">4</text>
+          <path id="cg-p5" d="M608,71 L637,71" fill="none" stroke="#3fb950" stroke-width="1.5" marker-end="url(#cg-ah-green)"/>
+          <circle r="2.5" fill="#3fb950" opacity="0.8"><animateMotion dur="1.5s" repeatCount="indefinite"><mpath href="#cg-p5"/></animateMotion></circle>
+          <circle cx="622" cy="61" r="10" fill="#0a192f" stroke="#3fb950" stroke-width="1.2"/><text x="622" y="64.5" fill="#3fb950" font-size="9" font-weight="700" text-anchor="middle">5</text>
+          <!-- Loop-back arrow -->
+          <path id="cg-loop" d="M667,92 C667,155 71,155 71,92" fill="none" stroke="rgba(88,166,255,0.3)" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#cg-ah)"/>
+          <circle r="3" fill="#58a6ff" opacity="0.7"><animateMotion dur="3s" repeatCount="indefinite"><mpath href="#cg-loop"/></animateMotion></circle>
+          <rect x="300" y="142" width="120" height="22" rx="11" fill="rgba(63,185,80,0.08)" stroke="rgba(63,185,80,0.2)" stroke-width="1"/>
+          <text x="360" y="157" fill="#3fb950" font-size="10" font-weight="600" text-anchor="middle" font-family="JetBrains Mono, monospace">loop until green</text>
+        </svg>
+      </div>
+      <div class="pc-loop" style="margin-top:12px">Tools: read_file, write_file, run_tests, grep, lint</div>
+    </div>
+
+    <!-- Data Analysis Agent -->
+    <div class="pattern-card fade-up">
+      <div class="pc-header">
+        <div class="pc-name">Data Analysis Agent</div>
+        <span class="pc-tag" style="background:rgba(63,185,80,0.15);color:var(--plan)">Query &rarr; Visualize &rarr; Interpret</span>
+      </div>
+      <div class="pc-desc">
+        The user asks a question about their data. The agent formulates SQL, runs it, generates a visualization, and interprets the results in natural language. If the first query doesn't answer the question fully, it refines. The key challenge is <span class="hi">translating vague questions into precise queries</span> &mdash; "how are sales doing?" requires the agent to infer time range, metric, and comparison baseline.
+      </div>
+      <div class="fade-up" style="margin:24px 0;overflow-x:auto">
+        <svg viewBox="0 0 720 130" width="100%" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, sans-serif">
+          <defs>
+            <marker id="da-ah" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#3fb950"/></marker>
+          </defs>
+          <!-- Dashed container -->
+          <rect x="4" y="4" width="712" height="122" rx="12" fill="rgba(63,185,80,0.04)" stroke="rgba(63,185,80,0.15)" stroke-width="1.5" stroke-dasharray="8 4"/>
+          <!-- Nodes -->
+          <rect x="20" y="40" width="115" height="42" rx="10" fill="#161b22" stroke="rgba(63,185,80,0.4)" stroke-width="1.2"/>
+          <text x="77" y="65" fill="#3fb950" font-size="11" font-weight="600" text-anchor="middle">&#x2753; Parse Question</text>
+          <rect x="168" y="40" width="112" height="42" rx="10" fill="#161b22" stroke="rgba(63,185,80,0.4)" stroke-width="1.2"/>
+          <text x="224" y="65" fill="#3fb950" font-size="11" font-weight="600" text-anchor="middle">&#x1F4BE; Generate SQL</text>
+          <rect x="313" y="40" width="115" height="42" rx="10" fill="#161b22" stroke="rgba(63,185,80,0.4)" stroke-width="1.2"/>
+          <text x="370" y="65" fill="#3fb950" font-size="11" font-weight="600" text-anchor="middle">&#x25B6;&#xFE0F; Execute Query</text>
+          <rect x="461" y="40" width="100" height="42" rx="10" fill="#161b22" stroke="rgba(63,185,80,0.4)" stroke-width="1.2"/>
+          <text x="511" y="65" fill="#3fb950" font-size="11" font-weight="600" text-anchor="middle">&#x1F4CA; Visualize</text>
+          <rect x="594" y="40" width="105" height="42" rx="10" fill="#161b22" stroke="rgba(63,185,80,0.4)" stroke-width="1.2"/>
+          <text x="646" y="65" fill="#3fb950" font-size="11" font-weight="600" text-anchor="middle">&#x1F4AC; Interpret</text>
+          <!-- Arrows with colored strokes, step numbers and animated dots -->
+          <path id="da-p1" d="M135,61 L168,61" fill="none" stroke="#3fb950" stroke-width="1.5" marker-end="url(#da-ah)"/>
+          <circle r="2.5" fill="#3fb950" opacity="0.8"><animateMotion dur="1.5s" repeatCount="indefinite"><mpath href="#da-p1"/></animateMotion></circle>
+          <circle cx="151" cy="51" r="10" fill="#0a192f" stroke="#3fb950" stroke-width="1.2"/><text x="151" y="54.5" fill="#3fb950" font-size="9" font-weight="700" text-anchor="middle">1</text>
+          <path id="da-p2" d="M280,61 L313,61" fill="none" stroke="#3fb950" stroke-width="1.5" marker-end="url(#da-ah)"/>
+          <circle r="2.5" fill="#3fb950" opacity="0.8"><animateMotion dur="1.5s" repeatCount="indefinite"><mpath href="#da-p2"/></animateMotion></circle>
+          <circle cx="296" cy="51" r="10" fill="#0a192f" stroke="#3fb950" stroke-width="1.2"/><text x="296" y="54.5" fill="#3fb950" font-size="9" font-weight="700" text-anchor="middle">2</text>
+          <path id="da-p3" d="M428,61 L461,61" fill="none" stroke="#3fb950" stroke-width="1.5" marker-end="url(#da-ah)"/>
+          <circle r="2.5" fill="#3fb950" opacity="0.8"><animateMotion dur="1.5s" repeatCount="indefinite"><mpath href="#da-p3"/></animateMotion></circle>
+          <circle cx="444" cy="51" r="10" fill="#0a192f" stroke="#3fb950" stroke-width="1.2"/><text x="444" y="54.5" fill="#3fb950" font-size="9" font-weight="700" text-anchor="middle">3</text>
+          <path id="da-p4" d="M561,61 L594,61" fill="none" stroke="#3fb950" stroke-width="1.5" marker-end="url(#da-ah)"/>
+          <circle r="2.5" fill="#3fb950" opacity="0.8"><animateMotion dur="1.5s" repeatCount="indefinite"><mpath href="#da-p4"/></animateMotion></circle>
+          <circle cx="577" cy="51" r="10" fill="#0a192f" stroke="#3fb950" stroke-width="1.2"/><text x="577" y="54.5" fill="#3fb950" font-size="9" font-weight="700" text-anchor="middle">4</text>
+        </svg>
+      </div>
+      <div class="pc-loop" style="margin-top:12px">Tools: query_database, create_chart, describe_schema, get_sample_data</div>
+    </div>
+
+    <!-- Customer Support Agent -->
+    <div class="pattern-card fade-up">
+      <div class="pc-header">
+        <div class="pc-name">Customer Support Agent</div>
+        <span class="pc-tag" style="background:rgba(188,140,255,0.15);color:var(--multi)">Classify &rarr; Route &rarr; Resolve</span>
+      </div>
+      <div class="pc-desc">
+        Classifies the incoming request (billing, technical, account), retrieves relevant context (order history, account status, past tickets), attempts resolution using approved playbooks, and escalates to a human agent when confidence is low or the action requires authorization. The <span class="hi">escalation decision</span> is the hardest part &mdash; too aggressive wastes human time, too conservative frustrates users.
+      </div>
+      <div class="fade-up" style="margin:24px 0;overflow-x:auto">
+        <svg viewBox="0 0 720 130" width="100%" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, sans-serif">
+          <defs>
+            <marker id="cs-ah" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#bc8cff"/></marker>
+            <marker id="cs-ah-gold" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#d29922"/></marker>
+          </defs>
+          <!-- Dashed container -->
+          <rect x="4" y="4" width="712" height="122" rx="12" fill="rgba(188,140,255,0.04)" stroke="rgba(188,140,255,0.15)" stroke-width="1.5" stroke-dasharray="8 4"/>
+          <!-- Nodes -->
+          <rect x="20" y="40" width="95" height="42" rx="10" fill="#161b22" stroke="rgba(188,140,255,0.4)" stroke-width="1.2"/>
+          <text x="67" y="65" fill="#bc8cff" font-size="11" font-weight="600" text-anchor="middle">&#x1F3F7;&#xFE0F; Classify</text>
+          <rect x="148" y="40" width="135" height="42" rx="10" fill="#161b22" stroke="rgba(188,140,255,0.4)" stroke-width="1.2"/>
+          <text x="215" y="65" fill="#bc8cff" font-size="11" font-weight="600" text-anchor="middle">&#x1F50D; Retrieve Context</text>
+          <rect x="316" y="40" width="80" height="42" rx="10" fill="#161b22" stroke="rgba(188,140,255,0.4)" stroke-width="1.2"/>
+          <text x="356" y="65" fill="#bc8cff" font-size="11" font-weight="600" text-anchor="middle">&#x1F6A6; Route</text>
+          <rect x="429" y="40" width="95" height="42" rx="10" fill="#161b22" stroke="rgba(188,140,255,0.4)" stroke-width="1.2"/>
+          <text x="476" y="65" fill="#bc8cff" font-size="11" font-weight="600" text-anchor="middle">&#x2705; Resolve</text>
+          <rect x="565" y="40" width="130" height="42" rx="10" fill="#161b22" stroke="rgba(210,153,34,0.4)" stroke-width="1.2"/>
+          <text x="630" y="65" fill="#d29922" font-size="11" font-weight="600" text-anchor="middle">&#x26A0;&#xFE0F; Escalate?</text>
+          <!-- Arrows with step numbers and animated dots -->
+          <path id="cs-p1" d="M115,61 L148,61" fill="none" stroke="#bc8cff" stroke-width="1.5" marker-end="url(#cs-ah)"/>
+          <circle r="2.5" fill="#bc8cff" opacity="0.8"><animateMotion dur="1.5s" repeatCount="indefinite"><mpath href="#cs-p1"/></animateMotion></circle>
+          <circle cx="131" cy="51" r="10" fill="#0a192f" stroke="#bc8cff" stroke-width="1.2"/><text x="131" y="54.5" fill="#bc8cff" font-size="9" font-weight="700" text-anchor="middle">1</text>
+          <path id="cs-p2" d="M283,61 L316,61" fill="none" stroke="#bc8cff" stroke-width="1.5" marker-end="url(#cs-ah)"/>
+          <circle r="2.5" fill="#bc8cff" opacity="0.8"><animateMotion dur="1.5s" repeatCount="indefinite"><mpath href="#cs-p2"/></animateMotion></circle>
+          <circle cx="299" cy="51" r="10" fill="#0a192f" stroke="#bc8cff" stroke-width="1.2"/><text x="299" y="54.5" fill="#bc8cff" font-size="9" font-weight="700" text-anchor="middle">2</text>
+          <path id="cs-p3" d="M396,61 L429,61" fill="none" stroke="#bc8cff" stroke-width="1.5" marker-end="url(#cs-ah)"/>
+          <circle r="2.5" fill="#bc8cff" opacity="0.8"><animateMotion dur="1.5s" repeatCount="indefinite"><mpath href="#cs-p3"/></animateMotion></circle>
+          <circle cx="412" cy="51" r="10" fill="#0a192f" stroke="#bc8cff" stroke-width="1.2"/><text x="412" y="54.5" fill="#bc8cff" font-size="9" font-weight="700" text-anchor="middle">3</text>
+          <path id="cs-p4" d="M524,61 L565,61" fill="none" stroke="#d29922" stroke-width="1.5" marker-end="url(#cs-ah-gold)"/>
+          <circle r="2.5" fill="#d29922" opacity="0.8"><animateMotion dur="1.5s" repeatCount="indefinite"><mpath href="#cs-p4"/></animateMotion></circle>
+          <circle cx="544" cy="51" r="10" fill="#0a192f" stroke="#d29922" stroke-width="1.2"/><text x="544" y="54.5" fill="#d29922" font-size="9" font-weight="700" text-anchor="middle">4</text>
+        </svg>
+      </div>
+      <div class="pc-loop" style="margin-top:12px">Tools: search_tickets, lookup_order, apply_credit, create_ticket, escalate_to_human</div>
+    </div>
+
+    <!-- Research Agent -->
+    <div class="pattern-card fade-up">
+      <div class="pc-header">
+        <div class="pc-name">Research Agent</div>
+        <span class="pc-tag" style="background:rgba(210,153,34,0.15);color:var(--hier)">Search &rarr; Read &rarr; Synthesize</span>
+      </div>
+      <div class="pc-desc">
+        Fan-out searches across multiple sources, reads and extracts key findings, cross-references claims between sources, and synthesizes a cited report. The critical design choice is <span class="hi">adversarial verification</span> &mdash; the agent actively looks for contradicting evidence before accepting a claim. Sources are ranked by authority, and every assertion in the final report links back to its source.
+      </div>
+      <div class="fade-up" style="margin:24px 0;overflow-x:auto">
+        <svg viewBox="0 0 720 130" width="100%" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, sans-serif">
+          <defs>
+            <marker id="ra-ah" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#d29922"/></marker>
+          </defs>
+          <!-- Dashed container -->
+          <rect x="4" y="4" width="712" height="122" rx="12" fill="rgba(210,153,34,0.04)" stroke="rgba(210,153,34,0.15)" stroke-width="1.5" stroke-dasharray="8 4"/>
+          <!-- Nodes -->
+          <rect x="20" y="40" width="90" height="42" rx="10" fill="#161b22" stroke="rgba(210,153,34,0.4)" stroke-width="1.2"/>
+          <text x="65" y="65" fill="#d29922" font-size="11" font-weight="600" text-anchor="middle">&#x1F50E; Search</text>
+          <rect x="143" y="40" width="120" height="42" rx="10" fill="#161b22" stroke="rgba(210,153,34,0.4)" stroke-width="1.2"/>
+          <text x="203" y="65" fill="#d29922" font-size="11" font-weight="600" text-anchor="middle">&#x1F4D6; Read Sources</text>
+          <rect x="296" y="40" width="115" height="42" rx="10" fill="#161b22" stroke="rgba(210,153,34,0.4)" stroke-width="1.2"/>
+          <text x="353" y="65" fill="#d29922" font-size="11" font-weight="600" text-anchor="middle">&#x2696;&#xFE0F; Cross-Check</text>
+          <rect x="444" y="40" width="110" height="42" rx="10" fill="#161b22" stroke="rgba(210,153,34,0.4)" stroke-width="1.2"/>
+          <text x="499" y="65" fill="#d29922" font-size="11" font-weight="600" text-anchor="middle">&#x1F9E9; Synthesize</text>
+          <rect x="594" y="40" width="105" height="42" rx="10" fill="#161b22" stroke="rgba(210,153,34,0.4)" stroke-width="1.2"/>
+          <text x="646" y="65" fill="#d29922" font-size="11" font-weight="600" text-anchor="middle">&#x1F4CE; Cite</text>
+          <!-- Arrows with step numbers and animated dots -->
+          <path id="ra-p1" d="M110,61 L143,61" fill="none" stroke="#d29922" stroke-width="1.5" marker-end="url(#ra-ah)"/>
+          <circle r="2.5" fill="#d29922" opacity="0.8"><animateMotion dur="1.5s" repeatCount="indefinite"><mpath href="#ra-p1"/></animateMotion></circle>
+          <circle cx="126" cy="51" r="10" fill="#0a192f" stroke="#d29922" stroke-width="1.2"/><text x="126" y="54.5" fill="#d29922" font-size="9" font-weight="700" text-anchor="middle">1</text>
+          <path id="ra-p2" d="M263,61 L296,61" fill="none" stroke="#d29922" stroke-width="1.5" marker-end="url(#ra-ah)"/>
+          <circle r="2.5" fill="#d29922" opacity="0.8"><animateMotion dur="1.5s" repeatCount="indefinite"><mpath href="#ra-p2"/></animateMotion></circle>
+          <circle cx="279" cy="51" r="10" fill="#0a192f" stroke="#d29922" stroke-width="1.2"/><text x="279" y="54.5" fill="#d29922" font-size="9" font-weight="700" text-anchor="middle">2</text>
+          <path id="ra-p3" d="M411,61 L444,61" fill="none" stroke="#d29922" stroke-width="1.5" marker-end="url(#ra-ah)"/>
+          <circle r="2.5" fill="#d29922" opacity="0.8"><animateMotion dur="1.5s" repeatCount="indefinite"><mpath href="#ra-p3"/></animateMotion></circle>
+          <circle cx="427" cy="51" r="10" fill="#0a192f" stroke="#d29922" stroke-width="1.2"/><text x="427" y="54.5" fill="#d29922" font-size="9" font-weight="700" text-anchor="middle">3</text>
+          <path id="ra-p4" d="M554,61 L594,61" fill="none" stroke="#d29922" stroke-width="1.5" marker-end="url(#ra-ah)"/>
+          <circle r="2.5" fill="#d29922" opacity="0.8"><animateMotion dur="1.5s" repeatCount="indefinite"><mpath href="#ra-p4"/></animateMotion></circle>
+          <circle cx="574" cy="51" r="10" fill="#0a192f" stroke="#d29922" stroke-width="1.2"/><text x="574" y="54.5" fill="#d29922" font-size="9" font-weight="700" text-anchor="middle">4</text>
+        </svg>
+      </div>
+      <div class="pc-loop" style="margin-top:12px">Tools: web_search, fetch_page, search_papers, extract_claims, verify_claim</div>
+    </div>
+
+    <!-- Full Pipeline Diagram -->
+    <p class="fade-up" style="font-size:14px;font-weight:600;color:var(--white);margin:32px 0 16px">End-to-End Agent Pipeline</p>
+    <div class="fade-up" style="margin:24px 0;overflow-x:auto">
+      <svg viewBox="0 0 480 620" width="100%" style="max-width:480px;margin:0 auto;display:block" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, sans-serif">
+        <defs>
+          <marker id="e2e-ah-accent" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#64ffda"/></marker>
+          <marker id="e2e-ah-blue" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#58a6ff"/></marker>
+          <marker id="e2e-ah-green" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#3fb950"/></marker>
+          <marker id="e2e-ah-purple" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#bc8cff"/></marker>
+          <marker id="e2e-ah-gold" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#d29922"/></marker>
+        </defs>
+        <!-- Dashed container -->
+        <rect x="4" y="4" width="472" height="612" rx="12" fill="rgba(100,255,218,0.03)" stroke="rgba(100,255,218,0.12)" stroke-width="1.5" stroke-dasharray="8 4"/>
+        <!-- Node 1: User Request -->
+        <rect x="40" y="24" width="400" height="60" rx="10" fill="#161b22" stroke="rgba(100,255,218,0.4)" stroke-width="1.2"/>
+        <text x="240" y="48" fill="#64ffda" font-size="13" font-weight="700" text-anchor="middle">&#x1F4E8; User Request</text>
+        <text x="240" y="68" fill="#495670" font-size="10" text-anchor="middle" font-family="JetBrains Mono, monospace">"Find all orders over $500 this month and flag anomalies"</text>
+        <!-- Arrow 1 -->
+        <path id="e2e-v1" d="M240,84 L240,120" fill="none" stroke="#64ffda" stroke-width="1.5" marker-end="url(#e2e-ah-accent)"/>
+        <circle r="2.5" fill="#64ffda" opacity="0.8"><animateMotion dur="1.5s" repeatCount="indefinite"><mpath href="#e2e-v1"/></animateMotion></circle>
+        <circle cx="256" cy="102" r="10" fill="#0a192f" stroke="#64ffda" stroke-width="1.2"/><text x="256" y="105.5" fill="#64ffda" font-size="9" font-weight="700" text-anchor="middle">1</text>
+        <!-- Node 2: Agent Receives Task -->
+        <rect x="40" y="120" width="400" height="60" rx="10" fill="#161b22" stroke="rgba(88,166,255,0.4)" stroke-width="1.2"/>
+        <text x="240" y="144" fill="#58a6ff" font-size="13" font-weight="700" text-anchor="middle">&#x1F916; Agent Receives Task</text>
+        <text x="240" y="164" fill="#495670" font-size="10" text-anchor="middle" font-family="JetBrains Mono, monospace">parse intent, identify required tools, check permissions</text>
+        <!-- Arrow 2 -->
+        <path id="e2e-v2" d="M240,180 L240,216" fill="none" stroke="#58a6ff" stroke-width="1.5" marker-end="url(#e2e-ah-blue)"/>
+        <circle r="2.5" fill="#58a6ff" opacity="0.8"><animateMotion dur="1.5s" repeatCount="indefinite"><mpath href="#e2e-v2"/></animateMotion></circle>
+        <circle cx="256" cy="198" r="10" fill="#0a192f" stroke="#58a6ff" stroke-width="1.2"/><text x="256" y="201.5" fill="#58a6ff" font-size="9" font-weight="700" text-anchor="middle">2</text>
+        <!-- Node 3: Plan -->
+        <rect x="40" y="216" width="400" height="60" rx="10" fill="#161b22" stroke="rgba(63,185,80,0.4)" stroke-width="1.2"/>
+        <text x="240" y="240" fill="#3fb950" font-size="13" font-weight="700" text-anchor="middle">&#x1F4DD; Plan</text>
+        <text x="240" y="260" fill="#495670" font-size="10" text-anchor="middle" font-family="JetBrains Mono, monospace">1. query orders  2. compute stats  3. detect outliers  4. format report</text>
+        <!-- Arrow 3 -->
+        <path id="e2e-v3" d="M240,276 L240,312" fill="none" stroke="#3fb950" stroke-width="1.5" marker-end="url(#e2e-ah-green)"/>
+        <circle r="2.5" fill="#3fb950" opacity="0.8"><animateMotion dur="1.5s" repeatCount="indefinite"><mpath href="#e2e-v3"/></animateMotion></circle>
+        <circle cx="256" cy="294" r="10" fill="#0a192f" stroke="#3fb950" stroke-width="1.2"/><text x="256" y="297.5" fill="#3fb950" font-size="9" font-weight="700" text-anchor="middle">3</text>
+        <!-- Node 4: Execute Tool Calls -->
+        <rect x="40" y="312" width="400" height="60" rx="10" fill="#161b22" stroke="rgba(188,140,255,0.4)" stroke-width="1.2"/>
+        <text x="240" y="336" fill="#bc8cff" font-size="13" font-weight="700" text-anchor="middle">&#x2699;&#xFE0F; Execute Tool Calls</text>
+        <text x="240" y="356" fill="#495670" font-size="10" text-anchor="middle" font-family="JetBrains Mono, monospace">query_database() &#x2192; calculate_statistics() &#x2192; detect_anomalies()</text>
+        <!-- Arrow 4 -->
+        <path id="e2e-v4" d="M240,372 L240,408" fill="none" stroke="#bc8cff" stroke-width="1.5" marker-end="url(#e2e-ah-purple)"/>
+        <circle r="2.5" fill="#bc8cff" opacity="0.8"><animateMotion dur="1.5s" repeatCount="indefinite"><mpath href="#e2e-v4"/></animateMotion></circle>
+        <circle cx="256" cy="390" r="10" fill="#0a192f" stroke="#bc8cff" stroke-width="1.2"/><text x="256" y="393.5" fill="#bc8cff" font-size="9" font-weight="700" text-anchor="middle">4</text>
+        <!-- Node 5: Observe Results -->
+        <rect x="40" y="408" width="400" height="60" rx="10" fill="#161b22" stroke="rgba(210,153,34,0.4)" stroke-width="1.2"/>
+        <text x="240" y="432" fill="#d29922" font-size="13" font-weight="700" text-anchor="middle">&#x1F441;&#xFE0F; Observe Results</text>
+        <text x="240" y="452" fill="#495670" font-size="10" text-anchor="middle" font-family="JetBrains Mono, monospace">142 orders, 3 flagged as anomalous, $47k total, mean $331</text>
+        <!-- Arrow 5 -->
+        <path id="e2e-v5" d="M240,468 L240,504" fill="none" stroke="#d29922" stroke-width="1.5" marker-end="url(#e2e-ah-gold)"/>
+        <circle r="2.5" fill="#d29922" opacity="0.8"><animateMotion dur="1.5s" repeatCount="indefinite"><mpath href="#e2e-v5"/></animateMotion></circle>
+        <circle cx="256" cy="486" r="10" fill="#0a192f" stroke="#d29922" stroke-width="1.2"/><text x="256" y="489.5" fill="#d29922" font-size="9" font-weight="700" text-anchor="middle">5</text>
+        <!-- Node 6: Respond to User -->
+        <rect x="40" y="504" width="400" height="60" rx="10" fill="#161b22" stroke="rgba(100,255,218,0.4)" stroke-width="1.2"/>
+        <text x="240" y="528" fill="#64ffda" font-size="13" font-weight="700" text-anchor="middle">&#x1F4E4; Respond to User</text>
+        <text x="240" y="548" fill="#495670" font-size="10" text-anchor="middle" font-family="JetBrains Mono, monospace">formatted report with summary, table, anomaly explanations, and chart</text>
+      </svg>
+    </div>
+
+    <div class="callout fade-up">
+      <strong>The common thread across all patterns:</strong> the agent has a <em>verifiable success criterion</em>. The coding agent has tests. The data agent has the query result. The support agent has resolution confirmation. The research agent has source citations. Without a clear success signal, the agent loop has no termination condition &mdash; it either guesses when to stop or runs forever. Design the success criterion before designing the agent.
+    </div>
+  </section>
+
+</div>
+
+<div class="footer">
+  <a href="../">&larr; Back to portfolio</a> &middot; Anvesh Jarabani &middot; July 2026
+</div>
+
+<script>
+// Spotlight
+const sp = document.getElementById('spotlight');
+document.addEventListener('mousemove', e => {
+  sp.style.background = `radial-gradient(600px at ${e.clientX}px ${e.clientY}px, rgba(29,78,216,0.06), transparent 80%)`;
+});
+
+// Fade-in
+const fadeObs = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); fadeObs.unobserve(e.target); } });
+}, { threshold: 0.1 });
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+window.scrollTo(0, 0);
+document.querySelectorAll('.fade-up').forEach(el => {
+  if (el.getBoundingClientRect().top < window.innerHeight) { el.classList.add('visible'); }
+  else { el.style.opacity = '0'; fadeObs.observe(el); }
+});
+
+// Scroll-spy
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('.top-bar nav a');
+const spyObs = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      navLinks.forEach(l => l.classList.remove('active'));
+      const link = document.querySelector(`.top-bar nav a[href="#${e.target.id}"]`);
+      if (link) link.classList.add('active');
+    }
+  });
+}, { rootMargin: '-30% 0px -70% 0px' });
+sections.forEach(s => spyObs.observe(s));
+
+// Smooth scroll for nav clicks
+document.querySelectorAll(".top-bar nav a[href^=\"#\"]").forEach(function(a){
+  a.addEventListener("click",function(e){
+    e.preventDefault();
+    var t=document.querySelector(this.getAttribute("href"));
+    if(t)t.scrollIntoView({behavior:"smooth",block:"start"});
+    history.pushState(null,"",this.getAttribute("href"));
+  });
+});
+
+// Staggered card reveal
+const cardObs = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      const cards = e.target.querySelectorAll('.card, .memory-card, .guard-card, .arch-pattern, .pattern-card, .seq-step, .pipeline-node, .tc-block');
+      cards.forEach((c, i) => {
+        c.style.opacity = '0';
+        c.style.transform = 'translateY(12px)';
+        c.style.transition = 'opacity .4s ease, transform .4s ease';
+        setTimeout(() => { c.style.opacity = '1'; c.style.transform = 'translateY(0)'; }, i * 80);
+      });
+      cardObs.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.1 });
+document.querySelectorAll('.card-grid, .memory-grid, .guard-stack, .pipeline, .tool-call-viz, section').forEach(el => cardObs.observe(el));
+</script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+title = "gitleaks config"
+
+[allowlist]
+  description = "portfolio site - static HTML only"
+  paths = [
+    '''\.html$''',
+    '''\.jpg$''',
+    '''\.png$''',
+  ]

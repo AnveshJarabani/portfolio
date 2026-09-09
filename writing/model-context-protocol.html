@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MCP: The Model Context Protocol — Anvesh Jarabani</title>
+<script>if("scrollRestoration" in history)history.scrollRestoration="manual";if(location.hash)history.replaceState(null,"",location.pathname);window.addEventListener("DOMContentLoaded",function(){window.scrollTo(0,0)});window.addEventListener("load",function(){window.scrollTo(0,0)});</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a192f;--bg-light:#112240;--border:#233554;
+  --text:#ccd6f6;--text-sec:#a8b2d1;--text-dim:#495670;
+  --accent:#64ffda;--accent-dim:rgba(100,255,218,0.1);
+  --white:#e6f1ff;
+  --tool:#58a6ff;--resource:#3fb950;--prompt:#bc8cff;
+  --stdio:#39d2c0;--sse:#d29922;--http:#f85149;
+}
+::selection{background:rgba(100,255,218,0.2)}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;font-size:15px}
+a{color:var(--accent);text-decoration:none;transition:opacity .2s}
+a:hover{opacity:.8}
+
+/* Top bar */
+.top-bar{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(10,25,47,0.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between}
+.top-bar .back{font-size:13px;color:var(--text-sec);display:flex;align-items:center;gap:6px}
+.top-bar .back:hover{color:var(--accent)}
+.top-bar nav{display:flex;gap:20px}
+.top-bar nav a{font-size:12px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-dim);transition:color .2s}
+.top-bar nav a.active{color:var(--accent)}
+.top-bar nav a:hover{color:var(--text-sec);opacity:1}
+
+/* Spotlight */
+#spotlight{position:fixed;inset:0;z-index:0;pointer-events:none;transition:background .15s}
+.container,.top-bar{position:relative;z-index:1}
+
+/* Container */
+.container{max-width:900px;margin:0 auto;padding:80px 24px 40px}
+
+/* Hero */
+.hero{padding:48px 0 32px;border-bottom:1px solid var(--border)}
+.hero .meta{font-size:12px;color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;margin-bottom:12px;display:flex;align-items:center;gap:16px}
+.hero h1{font-size:36px;font-weight:800;color:var(--white);line-height:1.2;margin-bottom:16px}
+.hero .subtitle{font-size:17px;color:var(--text-sec);line-height:1.6;max-width:680px}
+
+/* Section styling */
+section{padding:48px 0;border-bottom:1px solid var(--border)}
+section:last-of-type{border-bottom:none}
+section h2{font-size:22px;font-weight:700;color:var(--white);margin-bottom:8px;display:flex;align-items:center;gap:10px}
+section h2 .num{font-size:14px;color:var(--accent);font-family:'JetBrains Mono',monospace;font-weight:500}
+section h3{font-size:16px;font-weight:600;color:var(--white);margin:24px 0 8px}
+section p{color:var(--text-sec);margin:12px 0;font-size:14px;line-height:1.7}
+
+/* Utility classes */
+.hi{color:var(--white);font-weight:600}
+.ac{color:var(--accent);font-weight:700}
+code,.mono{font-family:'JetBrains Mono',monospace;font-size:13px;background:rgba(100,255,218,0.07);padding:2px 6px;border-radius:4px;color:var(--accent)}
+pre{background:var(--bg-light);border:1px solid var(--border);border-radius:8px;padding:20px;overflow-x:auto;margin:16px 0;line-height:1.5}
+pre code{background:none;padding:0;font-size:13px;color:var(--text)}
+
+/* Fade-up animation */
+.fade-up{transform:translateY(16px);transition:opacity .5s ease,transform .5s ease}
+.fade-up.visible{opacity:1;transform:translateY(0)}
+
+/* Card grid */
+.card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin:20px 0}
+.card{background:var(--bg-light);border:1px solid var(--border);border-radius:8px;padding:20px;transition:all .25s}
+.card:hover{border-color:var(--text-dim);background:rgba(100,255,218,0.03);box-shadow:0 4px 20px rgba(0,0,0,0.2)}
+.card .card-title{font-size:14px;font-weight:600;color:var(--white);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.card .card-title .icon{font-size:16px}
+.card p,.card li{font-size:13px;color:var(--text-sec);line-height:1.6}
+.card ul{list-style:none;padding:0}
+.card li{padding:3px 0}
+.card li::before{content:"\2192 ";color:var(--accent);font-size:12px}
+
+/* Callout */
+.callout{background:var(--accent-dim);border:1px solid rgba(100,255,218,0.15);border-radius:8px;padding:16px 20px;margin:20px 0;font-size:13px;color:var(--text-sec);line-height:1.6}
+.callout strong{color:var(--accent)}
+.callout code{background:rgba(100,255,218,0.12)}
+
+/* Comparison table */
+.comp-table{width:100%;border-collapse:collapse;margin:20px 0;font-size:13px}
+.comp-table th{text-align:left;padding:10px 14px;border-bottom:2px solid var(--border);color:var(--text-dim);font-size:11px;text-transform:uppercase;letter-spacing:1px;font-weight:600}
+.comp-table td{padding:10px 14px;border-bottom:1px solid var(--border);color:var(--text-sec)}
+.comp-table tr:hover td{background:var(--accent-dim)}
+.comp-table tr.highlight td{color:var(--accent);font-weight:600}
+
+/* Architecture diagram */
+.arch-diagram{display:flex;flex-direction:column;align-items:center;gap:0;margin:32px 0}
+.arch-layer{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;width:100%}
+.arch-box{background:var(--bg-light);border:1px solid var(--border);border-radius:8px;padding:16px 20px;text-align:center;flex:1;min-width:160px;max-width:260px;position:relative;transition:border-color .3s,box-shadow .3s}
+.arch-box:hover{border-color:var(--text-dim);box-shadow:0 4px 20px rgba(0,0,0,0.3)}
+.arch-box .label{font-size:14px;font-weight:600;color:var(--white);margin-bottom:4px}
+.arch-box .sub{font-size:11px;color:var(--text-dim);font-family:'JetBrains Mono',monospace}
+.arch-box.host{border-color:rgba(88,166,255,0.3)}.arch-box.host .label{color:var(--tool)}
+.arch-box.client{border-color:rgba(100,255,218,0.3)}.arch-box.client .label{color:var(--accent)}
+.arch-box.server{border-color:rgba(188,140,255,0.3)}.arch-box.server .label{color:var(--prompt)}
+.arch-box.prim-tool{border-color:rgba(88,166,255,0.3)}.arch-box.prim-tool .label{color:var(--tool)}
+.arch-box.prim-resource{border-color:rgba(63,185,80,0.3)}.arch-box.prim-resource .label{color:var(--resource)}
+.arch-box.prim-prompt{border-color:rgba(188,140,255,0.3)}.arch-box.prim-prompt .label{color:var(--prompt)}
+
+/* Animated dashed connectors */
+.arch-connectors{display:flex;justify-content:center;gap:40px;height:44px;align-items:center}
+.arch-arrow{display:flex;flex-direction:column;align-items:center;gap:0}
+.arch-arrow .arrow-label{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.arch-arrow .line{width:2px;height:20px;background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 4px,transparent 4px,transparent 8px);animation:dash-flow 1.5s linear infinite}
+.arch-arrow .arrow-head{width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid var(--border)}
+.arch-arrow.bidir .arrow-head-up{width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:6px solid var(--border);margin-bottom:4px}
+@keyframes dash-flow{from{background-position:0 0}to{background-position:0 8px}}
+
+/* Branch connectors */
+.branch-connectors{display:flex;justify-content:center;gap:60px;height:44px;align-items:center}
+
+/* Primitive cards (wider) */
+.prim-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:20px 0}
+.prim-card{background:var(--bg-light);border:1px solid var(--border);border-radius:8px;padding:20px;transition:all .25s}
+.prim-card:hover{border-color:var(--text-dim);background:rgba(100,255,218,0.03);box-shadow:0 4px 20px rgba(0,0,0,0.2)}
+.prim-card .prim-title{font-size:15px;font-weight:700;margin-bottom:4px}
+.prim-card .prim-subtitle{font-size:11px;color:var(--text-dim);font-family:'JetBrains Mono',monospace;margin-bottom:12px}
+.prim-card p{font-size:13px;color:var(--text-sec);line-height:1.6;margin:8px 0}
+.prim-card .examples{margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
+.prim-card .examples .example-label{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:6px}
+.prim-card .examples code{font-size:11px;display:block;padding:4px 8px;margin:3px 0;border-radius:4px}
+.prim-card.tool-card{border-color:rgba(88,166,255,0.3)}
+.prim-card.tool-card .prim-title{color:var(--tool)}
+.prim-card.resource-card{border-color:rgba(63,185,80,0.3)}
+.prim-card.resource-card .prim-title{color:var(--resource)}
+.prim-card.prompt-card{border-color:rgba(188,140,255,0.3)}
+.prim-card.prompt-card .prim-title{color:var(--prompt)}
+
+/* Pattern cards */
+.pattern-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin:20px 0}
+.pattern-card{background:var(--bg-light);border:1px solid var(--border);border-radius:8px;padding:20px;transition:all .25s}
+.pattern-card:hover{border-color:var(--text-dim);background:rgba(100,255,218,0.03);box-shadow:0 4px 20px rgba(0,0,0,0.2)}
+.pattern-card .pattern-name{font-size:14px;font-weight:600;color:var(--white);margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.pattern-card .pattern-desc{font-size:12px;color:var(--text-dim);margin-bottom:10px}
+.pattern-card ul{list-style:none;padding:0}
+.pattern-card li{font-size:13px;color:var(--text-sec);padding:3px 0}
+.pattern-card li::before{content:"\2192 ";color:var(--accent);font-size:12px}
+
+/* Multi-server flow diagram */
+.flow-diagram{display:flex;flex-direction:column;align-items:center;gap:0;margin:24px 0}
+.flow-node{background:var(--bg-light);border:1px solid var(--border);border-radius:8px;padding:14px 24px;min-width:380px;text-align:center;transition:border-color .3s}
+.flow-node:hover{border-color:var(--text-dim)}
+.flow-node .label{font-size:14px;font-weight:600;color:var(--white)}
+.flow-node .sub{font-size:11px;color:var(--text-dim);font-family:'JetBrains Mono',monospace}
+.flow-connector{display:flex;flex-direction:column;align-items:center}
+.flow-connector .vline{width:2px;height:16px;background:var(--border)}
+.flow-connector .arrow-down{width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid var(--border)}
+.flow-node.host-node{border-color:rgba(88,166,255,0.3)}.flow-node.host-node .label{color:var(--tool)}
+.flow-node.client-node{border-color:rgba(100,255,218,0.3)}.flow-node.client-node .label{color:var(--accent)}
+.flow-node.server-node{border-color:rgba(188,140,255,0.3)}.flow-node.server-node .label{color:var(--prompt)}
+
+/* Server fan-out */
+.fan-row{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;width:100%}
+.fan-item{background:var(--bg-light);border:1px solid var(--border);border-radius:8px;padding:14px 16px;text-align:center;flex:1;min-width:120px;max-width:180px;transition:border-color .3s}
+.fan-item:hover{border-color:var(--text-dim)}
+.fan-item .label{font-size:13px;font-weight:600;color:var(--prompt)}
+.fan-item .sub{font-size:10px;color:var(--text-dim);font-family:'JetBrains Mono',monospace}
+
+/* Ecosystem grid */
+.eco-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin:20px 0}
+.eco-card{background:var(--bg-light);border:1px solid var(--border);border-radius:8px;padding:16px;transition:all .25s}
+.eco-card:hover{border-color:var(--text-dim);background:rgba(100,255,218,0.03);box-shadow:0 4px 20px rgba(0,0,0,0.2)}
+.eco-card .eco-title{font-size:13px;font-weight:600;color:var(--white);margin-bottom:6px}
+.eco-card .eco-items{font-size:12px;color:var(--text-sec);line-height:1.6}
+
+/* Keyword highlights in code */
+.kw{color:#ff7b72}.fn{color:#d2a8ff}.str{color:#a5d6ff}.cm{color:var(--text-dim);font-style:italic}.typ{color:#79c0ff}.dec{color:var(--accent)}
+
+/* Footer */
+.footer{text-align:center;padding:40px 24px;font-size:12px;color:var(--text-dim)}
+.footer a{color:var(--text-sec)}
+.footer a:hover{color:var(--accent)}
+
+/* Responsive */
+@media(max-width:600px){
+  .top-bar nav{display:none}
+  .arch-layer,.fan-row{flex-direction:column;align-items:center}
+  .arch-box,.fan-item{max-width:100%}
+  .prim-grid{grid-template-columns:1fr}
+  .card-grid{grid-template-columns:1fr}
+  .pattern-grid{grid-template-columns:1fr}
+  .eco-grid{grid-template-columns:1fr}
+  .flow-node{min-width:auto;width:100%}
+  .hero h1{font-size:26px}
+}
+</style>
+</head>
+<body>
+
+<div id="spotlight"></div>
+
+<div class="top-bar">
+  <a href="../" class="back">&larr; anveshjarabani.com</a>
+  <nav>
+    <a href="#overview">Overview</a>
+    <a href="#architecture">Architecture</a>
+    <a href="#primitives">Primitives</a>
+    <a href="#building">Building</a>
+    <a href="#multi-server">Multi-Server</a>
+    <a href="#transports">Transports</a>
+    <a href="#patterns">Patterns</a>
+    <a href="#ecosystem">Ecosystem</a>
+  </nav>
+</div>
+
+<div class="container">
+
+<!-- Hero -->
+<div class="hero fade-up">
+  <div class="meta">Deep Dive &middot; Anvesh Jarabani &middot; July 2026 &middot; 12 min read</div>
+  <h1>MCP: The Model Context Protocol</h1>
+  <p class="subtitle">Anthropic's open standard for connecting AI models to tools, data, and the systems they need to reason about. A deep dive into the protocol that replaced a thousand bespoke integrations with one universal interface.</p>
+</div>
+
+<!-- Section 1: Overview -->
+<section id="overview">
+  <h2 class="fade-up"><span class="num">01.</span> Overview</h2>
+
+  <p class="fade-up">Before the Model Context Protocol, every AI integration was a bespoke wiring job. Want your LLM to query a database? Write a custom tool definition, handle serialization, manage auth, build error handling. Need it to read files? Different tool, different schema, different integration pattern. Connecting to Jira, Slack, GitHub, your internal APIs &mdash; each one required its own adapter, its own conventions, its own maintenance burden.</p>
+
+  <p class="fade-up">The result was fragmented context. An AI assistant might have access to your codebase through one integration and your documentation through another, but neither integration knew about the other. There was no shared protocol for capability discovery, no standard way for a model to ask <span class="hi">"what can I do here?"</span> and get a structured answer.</p>
+
+  <p class="fade-up">MCP fixes this. Released by Anthropic as an open specification, the <span class="ac">Model Context Protocol</span> defines a universal interface between AI models and the tools and data they need. Think of it as <span class="hi">USB for AI</span> &mdash; a standardized connector that lets any model talk to any tool without custom glue code.</p>
+
+  <div class="callout fade-up">
+    <strong>Key insight:</strong> MCP is not another framework or SDK. It is a <em>protocol</em> &mdash; a specification for message formats, capability negotiation, and lifecycle management. The SDKs (Python, TypeScript) are reference implementations, but anyone can build an MCP-compliant server or client from the spec alone.
+  </div>
+
+  <p class="fade-up">The protocol follows a client-server architecture inspired by the Language Server Protocol (LSP) that powers IDE intelligence. Just as LSP let editors like VS Code support any language without language-specific plugins, MCP lets AI applications support any tool without tool-specific integrations. One protocol, <span class="ac">N</span> servers, <span class="ac">M</span> models &mdash; full interoperability.</p>
+</section>
+
+<!-- Section 2: Architecture -->
+<section id="architecture">
+  <h2 class="fade-up"><span class="num">02.</span> Architecture</h2>
+
+  <p class="fade-up">MCP uses a layered architecture with three distinct roles: <span class="hi">Hosts</span>, <span class="hi">Clients</span>, and <span class="hi">Servers</span>. Understanding the boundary between these layers is critical to building well-behaved integrations.</p>
+
+  <div class="fade-up" style="margin:24px 0;overflow-x:auto">
+    <svg viewBox="0 0 820 620" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:820px;display:block;margin:0 auto" font-family="'Inter',system-ui,sans-serif">
+      <defs>
+        <!-- Arrowhead markers -->
+        <marker id="ah-blue" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#58a6ff"/></marker>
+        <marker id="ah-green" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#3fb950"/></marker>
+        <marker id="ah-purple" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#bc8cff"/></marker>
+        <marker id="ah-teal" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#39d2c0"/></marker>
+        <marker id="ah-muted" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#495670"/></marker>
+        <!-- Reverse arrowheads for bidirectional -->
+        <marker id="ah-teal-rev" viewBox="0 0 8 8" refX="0" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M8,0 L0,4 L8,8" fill="#39d2c0"/></marker>
+      </defs>
+
+      <!-- ===== HOST CONTAINER (dashed) ===== -->
+      <rect x="30" y="20" width="760" height="90" rx="12" fill="rgba(88,166,255,0.04)" stroke="rgba(88,166,255,0.15)" stroke-width="1.5" stroke-dasharray="8 4"/>
+      <text x="50" y="42" fill="#495670" font-size="10" font-weight="600" text-transform="uppercase" letter-spacing="1.5" font-family="'JetBrains Mono',monospace">🖥️ HOST LAYER</text>
+
+      <!-- Host cards -->
+      <rect x="60" y="52" width="200" height="48" rx="10" fill="#161b22" stroke="rgba(88,166,255,0.4)" stroke-width="1.2"/>
+      <text x="160" y="73" fill="#58a6ff" font-size="14" font-weight="700" text-anchor="middle">Host</text>
+      <text x="160" y="90" fill="#495670" font-size="11" font-weight="400" text-anchor="middle" font-family="'JetBrains Mono',monospace">Claude Desktop</text>
+
+      <rect x="310" y="52" width="200" height="48" rx="10" fill="#161b22" stroke="rgba(88,166,255,0.4)" stroke-width="1.2"/>
+      <text x="410" y="73" fill="#58a6ff" font-size="14" font-weight="700" text-anchor="middle">Host</text>
+      <text x="410" y="90" fill="#495670" font-size="11" font-weight="400" text-anchor="middle" font-family="'JetBrains Mono',monospace">IDE Extension</text>
+
+      <rect x="560" y="52" width="200" height="48" rx="10" fill="#161b22" stroke="rgba(88,166,255,0.4)" stroke-width="1.2"/>
+      <text x="660" y="73" fill="#58a6ff" font-size="14" font-weight="700" text-anchor="middle">Host</text>
+      <text x="660" y="90" fill="#495670" font-size="11" font-weight="400" text-anchor="middle" font-family="'JetBrains Mono',monospace">Custom App</text>
+
+      <!-- Step 1: Host spawns Clients -->
+      <circle cx="160" cy="120" r="10" fill="#0a192f" stroke="#58a6ff" stroke-width="1.2"/>
+      <text x="160" y="124" fill="#58a6ff" font-size="9" font-weight="700" text-anchor="middle">1</text>
+      <text x="182" y="124" fill="#495670" font-size="9" font-family="'JetBrains Mono',monospace">spawns</text>
+
+      <!-- Vertical lines: Host → Client -->
+      <path id="host-client-1" d="M160,130 L160,170" fill="none" stroke="#58a6ff" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-blue)"/>
+      <circle r="2.5" fill="#58a6ff" opacity="0.8"><animateMotion dur="1.5s" repeatCount="indefinite"><mpath href="#host-client-1"/></animateMotion></circle>
+
+      <path id="host-client-2" d="M410,100 L410,170" fill="none" stroke="#58a6ff" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-blue)"/>
+      <circle r="2.5" fill="#58a6ff" opacity="0.8"><animateMotion dur="1.5s" repeatCount="indefinite"><mpath href="#host-client-2"/></animateMotion></circle>
+
+      <path id="host-client-3" d="M660,100 L660,170" fill="none" stroke="#58a6ff" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-blue)"/>
+      <circle r="2.5" fill="#58a6ff" opacity="0.8"><animateMotion dur="1.5s" repeatCount="indefinite"><mpath href="#host-client-3"/></animateMotion></circle>
+
+      <!-- ===== CLIENT CONTAINER (dashed) ===== -->
+      <rect x="30" y="168" width="760" height="90" rx="12" fill="rgba(57,210,192,0.04)" stroke="rgba(57,210,192,0.15)" stroke-width="1.5" stroke-dasharray="8 4"/>
+      <text x="50" y="190" fill="#495670" font-size="10" font-weight="600" text-transform="uppercase" letter-spacing="1.5" font-family="'JetBrains Mono',monospace">🔌 CLIENT LAYER</text>
+
+      <!-- Client cards -->
+      <rect x="60" y="200" width="200" height="48" rx="10" fill="#161b22" stroke="rgba(57,210,192,0.4)" stroke-width="1.2"/>
+      <text x="160" y="221" fill="#39d2c0" font-size="14" font-weight="700" text-anchor="middle">Client</text>
+      <text x="160" y="238" fill="#495670" font-size="11" font-weight="400" text-anchor="middle" font-family="'JetBrains Mono',monospace">1:1 per server</text>
+
+      <rect x="310" y="200" width="200" height="48" rx="10" fill="#161b22" stroke="rgba(57,210,192,0.4)" stroke-width="1.2"/>
+      <text x="410" y="221" fill="#39d2c0" font-size="14" font-weight="700" text-anchor="middle">Client</text>
+      <text x="410" y="238" fill="#495670" font-size="11" font-weight="400" text-anchor="middle" font-family="'JetBrains Mono',monospace">1:1 per server</text>
+
+      <rect x="560" y="200" width="200" height="48" rx="10" fill="#161b22" stroke="rgba(57,210,192,0.4)" stroke-width="1.2"/>
+      <text x="660" y="221" fill="#39d2c0" font-size="14" font-weight="700" text-anchor="middle">Client</text>
+      <text x="660" y="238" fill="#495670" font-size="11" font-weight="400" text-anchor="middle" font-family="'JetBrains Mono',monospace">1:1 per server</text>
+
+      <!-- Step 2: Client ↔ Server (bidirectional JSON-RPC) -->
+      <circle cx="160" cy="268" r="10" fill="#0a192f" stroke="#39d2c0" stroke-width="1.2"/>
+      <text x="160" y="272" fill="#39d2c0" font-size="9" font-weight="700" text-anchor="middle">2</text>
+      <text x="182" y="272" fill="#495670" font-size="9" font-family="'JetBrains Mono',monospace">JSON-RPC ↕</text>
+
+      <!-- Bidirectional lines: Client ↔ Server -->
+      <path id="client-server-1" d="M160,278 L160,330" fill="none" stroke="#39d2c0" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-teal)" marker-start="url(#ah-teal-rev)"/>
+      <circle r="2.5" fill="#39d2c0" opacity="0.8"><animateMotion dur="2s" repeatCount="indefinite"><mpath href="#client-server-1"/></animateMotion></circle>
+      <circle r="2.5" fill="#39d2c0" opacity="0.5"><animateMotion dur="2s" repeatCount="indefinite" keyPoints="1;0" keyTimes="0;1" calcMode="linear"><mpath href="#client-server-1"/></animateMotion></circle>
+
+      <path id="client-server-2" d="M410,248 L410,330" fill="none" stroke="#39d2c0" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-teal)" marker-start="url(#ah-teal-rev)"/>
+      <circle r="2.5" fill="#39d2c0" opacity="0.8"><animateMotion dur="2s" repeatCount="indefinite"><mpath href="#client-server-2"/></animateMotion></circle>
+      <circle r="2.5" fill="#39d2c0" opacity="0.5"><animateMotion dur="2s" repeatCount="indefinite" keyPoints="1;0" keyTimes="0;1" calcMode="linear"><mpath href="#client-server-2"/></animateMotion></circle>
+
+      <path id="client-server-3" d="M660,248 L660,330" fill="none" stroke="#39d2c0" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-teal)" marker-start="url(#ah-teal-rev)"/>
+      <circle r="2.5" fill="#39d2c0" opacity="0.8"><animateMotion dur="2s" repeatCount="indefinite"><mpath href="#client-server-3"/></animateMotion></circle>
+      <circle r="2.5" fill="#39d2c0" opacity="0.5"><animateMotion dur="2s" repeatCount="indefinite" keyPoints="1;0" keyTimes="0;1" calcMode="linear"><mpath href="#client-server-3"/></animateMotion></circle>
+
+      <!-- ===== SERVER CONTAINER (dashed) ===== -->
+      <rect x="30" y="326" width="760" height="90" rx="12" fill="rgba(188,140,255,0.04)" stroke="rgba(188,140,255,0.15)" stroke-width="1.5" stroke-dasharray="8 4"/>
+      <text x="50" y="348" fill="#495670" font-size="10" font-weight="600" text-transform="uppercase" letter-spacing="1.5" font-family="'JetBrains Mono',monospace">⚙️ SERVER LAYER</text>
+
+      <!-- Server cards -->
+      <rect x="60" y="358" width="200" height="48" rx="10" fill="#161b22" stroke="rgba(188,140,255,0.4)" stroke-width="1.2"/>
+      <text x="160" y="379" fill="#bc8cff" font-size="14" font-weight="700" text-anchor="middle">Server</text>
+      <text x="160" y="396" fill="#495670" font-size="11" font-weight="400" text-anchor="middle" font-family="'JetBrains Mono',monospace">filesystem</text>
+
+      <rect x="310" y="358" width="200" height="48" rx="10" fill="#161b22" stroke="rgba(188,140,255,0.4)" stroke-width="1.2"/>
+      <text x="410" y="379" fill="#bc8cff" font-size="14" font-weight="700" text-anchor="middle">Server</text>
+      <text x="410" y="396" fill="#495670" font-size="11" font-weight="400" text-anchor="middle" font-family="'JetBrains Mono',monospace">database</text>
+
+      <rect x="560" y="358" width="200" height="48" rx="10" fill="#161b22" stroke="rgba(188,140,255,0.4)" stroke-width="1.2"/>
+      <text x="660" y="379" fill="#bc8cff" font-size="14" font-weight="700" text-anchor="middle">Server</text>
+      <text x="660" y="396" fill="#495670" font-size="11" font-weight="400" text-anchor="middle" font-family="'JetBrains Mono',monospace">github</text>
+
+      <!-- Step 3: Server exposes Primitives -->
+      <circle cx="410" cy="436" r="10" fill="#0a192f" stroke="#bc8cff" stroke-width="1.2"/>
+      <text x="410" y="440" fill="#bc8cff" font-size="9" font-weight="700" text-anchor="middle">3</text>
+      <text x="432" y="440" fill="#495670" font-size="9" font-family="'JetBrains Mono',monospace">exposes</text>
+
+      <!-- Branching bezier paths: Server → Primitives -->
+      <path id="srv-prim-1" d="M270,406 C270,460 190,470 190,500" fill="none" stroke="#58a6ff" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-blue)"/>
+      <circle r="2.5" fill="#58a6ff" opacity="0.8"><animateMotion dur="2.5s" repeatCount="indefinite"><mpath href="#srv-prim-1"/></animateMotion></circle>
+
+      <path id="srv-prim-2" d="M410,406 C410,460 410,470 410,500" fill="none" stroke="#3fb950" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-green)"/>
+      <circle r="2.5" fill="#3fb950" opacity="0.8"><animateMotion dur="2.5s" repeatCount="indefinite"><mpath href="#srv-prim-2"/></animateMotion></circle>
+
+      <path id="srv-prim-3" d="M550,406 C550,460 630,470 630,500" fill="none" stroke="#bc8cff" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-purple)"/>
+      <circle r="2.5" fill="#bc8cff" opacity="0.8"><animateMotion dur="2.5s" repeatCount="indefinite"><mpath href="#srv-prim-3"/></animateMotion></circle>
+
+      <!-- ===== PRIMITIVES CONTAINER (dashed) ===== -->
+      <rect x="30" y="496" width="760" height="105" rx="12" fill="rgba(100,255,218,0.03)" stroke="rgba(100,255,218,0.12)" stroke-width="1.5" stroke-dasharray="8 4"/>
+      <text x="50" y="518" fill="#495670" font-size="10" font-weight="600" text-transform="uppercase" letter-spacing="1.5" font-family="'JetBrains Mono',monospace">🧩 PRIMITIVES</text>
+
+      <!-- Primitive cards -->
+      <rect x="60" y="528" width="220" height="60" rx="10" fill="#161b22" stroke="rgba(88,166,255,0.4)" stroke-width="1.2"/>
+      <text x="170" y="551" fill="#58a6ff" font-size="14" font-weight="700" text-anchor="middle">🔧 Tools</text>
+      <text x="170" y="574" fill="#495670" font-size="11" font-weight="400" text-anchor="middle" font-family="'JetBrains Mono',monospace">model-invoked</text>
+
+      <rect x="300" y="528" width="220" height="60" rx="10" fill="#161b22" stroke="rgba(63,185,80,0.4)" stroke-width="1.2"/>
+      <text x="410" y="551" fill="#3fb950" font-size="14" font-weight="700" text-anchor="middle">📄 Resources</text>
+      <text x="410" y="574" fill="#495670" font-size="11" font-weight="400" text-anchor="middle" font-family="'JetBrains Mono',monospace">app-controlled</text>
+
+      <rect x="540" y="528" width="220" height="60" rx="10" fill="#161b22" stroke="rgba(188,140,255,0.4)" stroke-width="1.2"/>
+      <text x="650" y="551" fill="#bc8cff" font-size="14" font-weight="700" text-anchor="middle">💬 Prompts</text>
+      <text x="650" y="574" fill="#495670" font-size="11" font-weight="400" text-anchor="middle" font-family="'JetBrains Mono',monospace">user-triggered</text>
+    </svg>
+  </div>
+
+  <p class="fade-up">The <span class="hi">Host</span> is the AI application the user interacts with &mdash; Claude Desktop, an IDE extension like Claude Code, or your own custom application. The host manages the user experience, controls which servers are connected, and mediates between the model and the protocol layer.</p>
+
+  <p class="fade-up">Each host creates one or more <span class="hi">Clients</span>. A client is a protocol-level connector that maintains a <span class="ac">1:1 relationship</span> with a single server. This isolation is deliberate: servers cannot see each other, cannot interfere with each other, and each connection has its own lifecycle. The host is the only entity with cross-server visibility.</p>
+
+  <p class="fade-up">A <span class="hi">Server</span> is a lightweight program that exposes capabilities through the three MCP primitives: tools, resources, and prompts. Servers are designed to be small, focused, and composable. A filesystem server does filesystem things. A database server does database things. You combine them at the host level, not by building monoliths.</p>
+
+  <div class="callout fade-up">
+    <strong>Transport layer:</strong> The connection between client and server uses JSON-RPC 2.0 messages over a configurable transport. MCP supports <code>stdio</code> for local processes, <code>SSE</code> for HTTP-based communication, and the newer <code>Streamable HTTP</code> transport for production deployments. The protocol is transport-agnostic &mdash; the same server logic works over any transport.
+  </div>
+</section>
+
+<!-- Section 3: Primitives -->
+<section id="primitives">
+  <h2 class="fade-up"><span class="num">03.</span> Primitives</h2>
+
+  <p class="fade-up">MCP defines three core primitives that servers can expose. Each primitive has a different control model &mdash; who decides when and how it gets used &mdash; and understanding this distinction is essential for designing good MCP integrations.</p>
+
+  <div class="prim-grid fade-up">
+    <div class="prim-card tool-card">
+      <div class="prim-title">Tools</div>
+      <div class="prim-subtitle">Model-controlled</div>
+      <p>Functions that the AI model can choose to invoke. The model sees the tool's name, description, and input schema, then decides when calling it would help answer the user's question. This is the most common primitive &mdash; and the most powerful.</p>
+      <div class="examples">
+        <div class="example-label">Examples</div>
+        <code>read_file(path: string)</code>
+        <code>query_database(sql: string)</code>
+        <code>create_issue(title, body, labels)</code>
+        <code>search_codebase(query: string)</code>
+      </div>
+    </div>
+
+    <div class="prim-card resource-card">
+      <div class="prim-title">Resources</div>
+      <div class="prim-subtitle">Application-controlled</div>
+      <p>Structured data exposed via URI schemes that the host application can attach to the model's context. Unlike tools, the model does not decide to "call" a resource &mdash; the application or user selects which resources to include. Think of them as contextual documents.</p>
+      <div class="examples">
+        <div class="example-label">Examples</div>
+        <code>file:///src/main.py</code>
+        <code>db://prod/users/schema</code>
+        <code>notion://page/design-doc</code>
+        <code>git://repo/diff/main..HEAD</code>
+      </div>
+    </div>
+
+    <div class="prim-card prompt-card">
+      <div class="prim-title">Prompts</div>
+      <div class="prim-subtitle">User-controlled</div>
+      <p>Reusable prompt templates with typed parameters that the user explicitly selects. Prompts are discoverable through the protocol and can generate structured message sequences. They let server authors share domain expertise as composable instructions.</p>
+      <div class="examples">
+        <div class="example-label">Examples</div>
+        <code>review_code(language, focus_area)</code>
+        <code>explain_error(stack_trace)</code>
+        <code>summarize_pr(repo, pr_number)</code>
+        <code>migrate_schema(from_ver, to_ver)</code>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout fade-up">
+    <strong>Control model matters:</strong> Tools are the "hands" of the AI &mdash; the model autonomously decides to use them. Resources are the "eyes" &mdash; the application decides what to show. Prompts are the "playbooks" &mdash; the user explicitly activates them. Misclassifying a primitive (e.g., making something a tool when it should be a resource) leads to poor UX: models calling things they should not, or users unable to access data the model could surface.
+  </div>
+
+  <p class="fade-up">Each primitive is registered with the server using a <span class="hi">name</span>, <span class="hi">description</span>, and (for tools and prompts) an <span class="hi">input schema</span> defined in JSON Schema. The description is particularly important for tools &mdash; it is the primary signal the model uses to decide whether and when to invoke the tool. A vague description produces unreliable tool usage; a precise one produces targeted, appropriate calls.</p>
+</section>
+
+<!-- Section 4: Building Servers -->
+<section id="building">
+  <h2 class="fade-up"><span class="num">04.</span> Building Servers</h2>
+
+  <p class="fade-up">Building an MCP server is intentionally simple. The official SDKs handle protocol negotiation, message framing, and transport management. Your job is to define what your server can do &mdash; register tools, expose resources, declare prompts &mdash; and the SDK handles the rest.</p>
+
+  <h3 class="fade-up">Python SDK: The Basics</h3>
+  <p class="fade-up">The Python SDK provides a decorator-based API that makes server creation feel like writing a Flask app. Here is a minimal database server that exposes schema introspection and query execution:</p>
+
+  <pre class="fade-up"><code><span class="kw">from</span> mcp.server.fastmcp <span class="kw">import</span> FastMCP
+<span class="kw">import</span> sqlite3
+
+<span class="cm"># Create the server</span>
+app = FastMCP(<span class="str">"database"</span>)
+
+<span class="dec">@app.tool</span>()
+<span class="kw">def</span> <span class="fn">query</span>(sql: <span class="typ">str</span>) -> <span class="typ">str</span>:
+    <span class="str">"""Execute a read-only SQL query against the database.
+    Only SELECT statements are allowed. Returns results as
+    formatted text with column headers."""</span>
+    <span class="kw">if not</span> sql.strip().upper().startswith(<span class="str">"SELECT"</span>):
+        <span class="kw">raise</span> <span class="typ">ValueError</span>(<span class="str">"Only SELECT queries are allowed"</span>)
+    conn = sqlite3.connect(<span class="str">"app.db"</span>)
+    cursor = conn.execute(sql)
+    cols = [d[<span class="str">0</span>] <span class="kw">for</span> d <span class="kw">in</span> cursor.description]
+    rows = cursor.fetchall()
+    <span class="kw">return</span> format_table(cols, rows)
+
+<span class="dec">@app.tool</span>()
+<span class="kw">def</span> <span class="fn">list_tables</span>() -> <span class="typ">list</span>[<span class="typ">str</span>]:
+    <span class="str">"""List all tables in the database."""</span>
+    conn = sqlite3.connect(<span class="str">"app.db"</span>)
+    cursor = conn.execute(
+        <span class="str">"SELECT name FROM sqlite_master WHERE type='table'"</span>
+    )
+    <span class="kw">return</span> [row[<span class="str">0</span>] <span class="kw">for</span> row <span class="kw">in</span> cursor.fetchall()]
+
+<span class="dec">@app.tool</span>()
+<span class="kw">def</span> <span class="fn">describe_table</span>(table: <span class="typ">str</span>) -> <span class="typ">str</span>:
+    <span class="str">"""Get column names, types, and constraints for a table."""</span>
+    conn = sqlite3.connect(<span class="str">"app.db"</span>)
+    cursor = conn.execute(<span class="str">f"PRAGMA table_info(</span>{table}<span class="str">)"</span>)
+    <span class="kw">return</span> format_schema(cursor.fetchall())
+</code></pre>
+
+  <h3 class="fade-up">TypeScript SDK</h3>
+  <p class="fade-up">The TypeScript SDK follows the same patterns with a class-based API. Tool registration uses method chaining with Zod schemas for input validation:</p>
+
+  <pre class="fade-up"><code><span class="kw">import</span> { McpServer } <span class="kw">from</span> <span class="str">"@modelcontextprotocol/sdk/server/mcp.js"</span>;
+<span class="kw">import</span> { z } <span class="kw">from</span> <span class="str">"zod"</span>;
+
+<span class="kw">const</span> server = <span class="kw">new</span> <span class="fn">McpServer</span>({
+  name: <span class="str">"github"</span>,
+  version: <span class="str">"1.0.0"</span>
+});
+
+server.<span class="fn">tool</span>(
+  <span class="str">"create_issue"</span>,
+  <span class="str">"Create a new GitHub issue in a repository"</span>,
+  {
+    repo:  z.<span class="fn">string</span>().<span class="fn">describe</span>(<span class="str">"owner/repo format"</span>),
+    title: z.<span class="fn">string</span>().<span class="fn">describe</span>(<span class="str">"Issue title"</span>),
+    body:  z.<span class="fn">string</span>().<span class="fn">optional</span>().<span class="fn">describe</span>(<span class="str">"Issue body (markdown)"</span>),
+    labels: z.<span class="fn">array</span>(z.<span class="fn">string</span>()).<span class="fn">optional</span>()
+  },
+  <span class="kw">async</span> ({ repo, title, body, labels }) => {
+    <span class="kw">const</span> result = <span class="kw">await</span> octokit.rest.issues.<span class="fn">create</span>({
+      ...parseRepo(repo), title, body, labels
+    });
+    <span class="kw">return</span> { content: [{ type: <span class="str">"text"</span>, text: <span class="str">`Created #${result.data.number}`</span> }] };
+  }
+);
+</code></pre>
+
+  <h3 class="fade-up">Error Handling</h3>
+  <p class="fade-up">MCP distinguishes between <span class="hi">tool errors</span> (the tool ran but failed &mdash; invalid input, resource not found) and <span class="hi">protocol errors</span> (the server itself is broken). Tool errors should be returned as content with <code>isError: true</code> so the model can reason about the failure and retry or adjust. Protocol errors propagate as JSON-RPC error responses.</p>
+
+  <pre class="fade-up"><code><span class="dec">@app.tool</span>()
+<span class="kw">def</span> <span class="fn">read_file</span>(path: <span class="typ">str</span>) -> <span class="typ">str</span>:
+    <span class="str">"""Read contents of a file at the given path."""</span>
+    <span class="kw">try</span>:
+        <span class="kw">return</span> Path(path).read_text()
+    <span class="kw">except</span> <span class="typ">FileNotFoundError</span>:
+        <span class="cm"># Tool error: model can see this and adjust</span>
+        <span class="kw">raise</span> <span class="typ">ToolError</span>(<span class="str">f"File not found: {path}"</span>)
+    <span class="kw">except</span> <span class="typ">PermissionError</span>:
+        <span class="kw">raise</span> <span class="typ">ToolError</span>(<span class="str">f"Permission denied: {path}"</span>)
+</code></pre>
+
+  <div class="callout fade-up">
+    <strong>Design principle:</strong> Good tool descriptions are concise but unambiguous. State what the tool does, what inputs it expects, and any constraints. The model reads your description to decide when to call the tool &mdash; it has no other signal. Include boundary conditions: "Only SELECT queries", "Paths must be relative to project root", "Returns at most 100 results".
+  </div>
+</section>
+
+<!-- Section 5: Multi-Server -->
+<section id="multi-server">
+  <h2 class="fade-up"><span class="num">05.</span> Multi-Server Orchestration</h2>
+
+  <p class="fade-up">The real power of MCP emerges when you connect <span class="ac">multiple servers simultaneously</span>. A single AI session might have a filesystem server for code access, a database server for data queries, a GitHub server for issue tracking, and a monitoring server for production metrics &mdash; all connected through the same protocol, all discoverable by the model.</p>
+
+  <h3 class="fade-up">How It Works</h3>
+  <p class="fade-up">The host application maintains multiple client instances, each connected to its own server. When the model needs to act, it sees the combined tool list from all connected servers. Tool names are namespaced to prevent collisions: <code>mcp__filesystem__read_file</code>, <code>mcp__database__query</code>, <code>mcp__github__create_issue</code>.</p>
+
+  <div class="fade-up" style="margin:24px 0;overflow-x:auto">
+    <svg viewBox="0 0 820 480" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:820px;display:block;margin:0 auto" font-family="'Inter',system-ui,sans-serif">
+      <defs>
+        <marker id="ah2-blue" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#58a6ff"/></marker>
+        <marker id="ah2-teal" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#39d2c0"/></marker>
+        <marker id="ah2-teal-rev" viewBox="0 0 8 8" refX="0" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M8,0 L0,4 L8,8" fill="#39d2c0"/></marker>
+        <marker id="ah2-purple" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#bc8cff"/></marker>
+        <marker id="ah2-gold" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#d29922"/></marker>
+        <marker id="ah2-green" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#3fb950"/></marker>
+        <marker id="ah2-red" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#f85149"/></marker>
+      </defs>
+
+      <!-- ===== HOST APPLICATION (top) ===== -->
+      <rect x="220" y="20" width="380" height="60" rx="12" fill="rgba(88,166,255,0.04)" stroke="rgba(88,166,255,0.15)" stroke-width="1.5" stroke-dasharray="8 4"/>
+      <rect x="240" y="30" width="340" height="40" rx="10" fill="#161b22" stroke="rgba(88,166,255,0.4)" stroke-width="1.2"/>
+      <text x="410" y="50" fill="#58a6ff" font-size="15" font-weight="700" text-anchor="middle">🖥️ Host Application</text>
+      <text x="410" y="64" fill="#495670" font-size="10" font-weight="400" text-anchor="middle" font-family="'JetBrains Mono',monospace">Claude Code / Custom App</text>
+
+      <!-- Step 1: Host spawns clients -->
+      <circle cx="410" cy="100" r="10" fill="#0a192f" stroke="#58a6ff" stroke-width="1.2"/>
+      <text x="410" y="104" fill="#58a6ff" font-size="9" font-weight="700" text-anchor="middle">1</text>
+      <text x="432" y="104" fill="#495670" font-size="9" font-family="'JetBrains Mono',monospace">spawns clients</text>
+
+      <!-- Fan-out lines from Host to 3 Clients -->
+      <path id="ms-fan-1" d="M320,80 C320,120 175,130 175,160" fill="none" stroke="#58a6ff" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah2-blue)"/>
+      <circle r="2.5" fill="#58a6ff" opacity="0.8"><animateMotion dur="1.8s" repeatCount="indefinite"><mpath href="#ms-fan-1"/></animateMotion></circle>
+
+      <path id="ms-fan-2" d="M410,80 L410,160" fill="none" stroke="#58a6ff" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah2-blue)"/>
+      <circle r="2.5" fill="#58a6ff" opacity="0.8"><animateMotion dur="1.8s" repeatCount="indefinite"><mpath href="#ms-fan-2"/></animateMotion></circle>
+
+      <path id="ms-fan-3" d="M500,80 C500,120 645,130 645,160" fill="none" stroke="#58a6ff" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah2-blue)"/>
+      <circle r="2.5" fill="#58a6ff" opacity="0.8"><animateMotion dur="1.8s" repeatCount="indefinite"><mpath href="#ms-fan-3"/></animateMotion></circle>
+
+      <!-- ===== CLIENTS ROW ===== -->
+      <rect x="30" y="158" width="760" height="60" rx="12" fill="rgba(57,210,192,0.03)" stroke="rgba(57,210,192,0.1)" stroke-width="1.5" stroke-dasharray="8 4"/>
+
+      <rect x="80" y="168" width="190" height="40" rx="10" fill="#161b22" stroke="rgba(57,210,192,0.4)" stroke-width="1.2"/>
+      <text x="175" y="192" fill="#39d2c0" font-size="13" font-weight="700" text-anchor="middle">🔌 Client 1</text>
+
+      <rect x="315" y="168" width="190" height="40" rx="10" fill="#161b22" stroke="rgba(57,210,192,0.4)" stroke-width="1.2"/>
+      <text x="410" y="192" fill="#39d2c0" font-size="13" font-weight="700" text-anchor="middle">🔌 Client 2</text>
+
+      <rect x="550" y="168" width="190" height="40" rx="10" fill="#161b22" stroke="rgba(57,210,192,0.4)" stroke-width="1.2"/>
+      <text x="645" y="192" fill="#39d2c0" font-size="13" font-weight="700" text-anchor="middle">🔌 Client 3</text>
+
+      <!-- Step 2: Bidirectional JSON-RPC -->
+      <circle cx="410" cy="240" r="10" fill="#0a192f" stroke="#39d2c0" stroke-width="1.2"/>
+      <text x="410" y="244" fill="#39d2c0" font-size="9" font-weight="700" text-anchor="middle">2</text>
+      <text x="432" y="244" fill="#495670" font-size="9" font-family="'JetBrains Mono',monospace">JSON-RPC ↕</text>
+
+      <!-- Bidirectional lines: Client ↔ Server -->
+      <path id="ms-cs-1" d="M175,208 L175,288" fill="none" stroke="#39d2c0" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah2-teal)" marker-start="url(#ah2-teal-rev)"/>
+      <circle r="2.5" fill="#39d2c0" opacity="0.8"><animateMotion dur="2s" repeatCount="indefinite"><mpath href="#ms-cs-1"/></animateMotion></circle>
+      <circle r="2.5" fill="#39d2c0" opacity="0.5"><animateMotion dur="2s" repeatCount="indefinite" keyPoints="1;0" keyTimes="0;1" calcMode="linear"><mpath href="#ms-cs-1"/></animateMotion></circle>
+
+      <path id="ms-cs-2" d="M410,208 L410,288" fill="none" stroke="#39d2c0" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah2-teal)" marker-start="url(#ah2-teal-rev)"/>
+      <circle r="2.5" fill="#39d2c0" opacity="0.8"><animateMotion dur="2s" repeatCount="indefinite"><mpath href="#ms-cs-2"/></animateMotion></circle>
+      <circle r="2.5" fill="#39d2c0" opacity="0.5"><animateMotion dur="2s" repeatCount="indefinite" keyPoints="1;0" keyTimes="0;1" calcMode="linear"><mpath href="#ms-cs-2"/></animateMotion></circle>
+
+      <path id="ms-cs-3" d="M645,208 L645,288" fill="none" stroke="#39d2c0" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah2-teal)" marker-start="url(#ah2-teal-rev)"/>
+      <circle r="2.5" fill="#39d2c0" opacity="0.8"><animateMotion dur="2s" repeatCount="indefinite"><mpath href="#ms-cs-3"/></animateMotion></circle>
+      <circle r="2.5" fill="#39d2c0" opacity="0.5"><animateMotion dur="2s" repeatCount="indefinite" keyPoints="1;0" keyTimes="0;1" calcMode="linear"><mpath href="#ms-cs-3"/></animateMotion></circle>
+
+      <!-- ===== SERVERS CONTAINER (dashed) ===== -->
+      <rect x="30" y="286" width="760" height="90" rx="12" fill="rgba(188,140,255,0.04)" stroke="rgba(188,140,255,0.15)" stroke-width="1.5" stroke-dasharray="8 4"/>
+      <text x="50" y="308" fill="#495670" font-size="10" font-weight="600" text-transform="uppercase" letter-spacing="1.5" font-family="'JetBrains Mono',monospace">⚙️ MCP SERVERS</text>
+
+      <!-- Server cards (3 visible, with 4th partially clipped to suggest more) -->
+      <rect x="55" y="316" width="160" height="50" rx="10" fill="#161b22" stroke="rgba(88,166,255,0.4)" stroke-width="1.2"/>
+      <text x="135" y="337" fill="#58a6ff" font-size="13" font-weight="700" text-anchor="middle">📁 Filesystem</text>
+      <text x="135" y="355" fill="#495670" font-size="10" font-weight="400" text-anchor="middle" font-family="'JetBrains Mono',monospace">read, write, search</text>
+
+      <rect x="235" y="316" width="160" height="50" rx="10" fill="#161b22" stroke="rgba(63,185,80,0.4)" stroke-width="1.2"/>
+      <text x="315" y="337" fill="#3fb950" font-size="13" font-weight="700" text-anchor="middle">🗄️ Database</text>
+      <text x="315" y="355" fill="#495670" font-size="10" font-weight="400" text-anchor="middle" font-family="'JetBrains Mono',monospace">query, schema</text>
+
+      <rect x="415" y="316" width="160" height="50" rx="10" fill="#161b22" stroke="rgba(188,140,255,0.4)" stroke-width="1.2"/>
+      <text x="495" y="337" fill="#bc8cff" font-size="13" font-weight="700" text-anchor="middle">🐙 GitHub</text>
+      <text x="495" y="355" fill="#495670" font-size="10" font-weight="400" text-anchor="middle" font-family="'JetBrains Mono',monospace">issues, PRs, repos</text>
+
+      <rect x="595" y="316" width="160" height="50" rx="10" fill="#161b22" stroke="rgba(210,153,34,0.4)" stroke-width="1.2"/>
+      <text x="675" y="337" fill="#d29922" font-size="13" font-weight="700" text-anchor="middle">💬 Slack</text>
+      <text x="675" y="355" fill="#495670" font-size="10" font-weight="400" text-anchor="middle" font-family="'JetBrains Mono',monospace">messages, channels</text>
+
+      <!-- ===== CROSS-SERVER WORKFLOW (bottom) ===== -->
+      <circle cx="410" cy="400" r="10" fill="#0a192f" stroke="#d29922" stroke-width="1.2"/>
+      <text x="410" y="404" fill="#d29922" font-size="9" font-weight="700" text-anchor="middle">3</text>
+      <text x="432" y="404" fill="#495670" font-size="9" font-family="'JetBrains Mono',monospace">cross-server workflow</text>
+
+      <!-- Workflow path weaving across servers -->
+      <path id="ms-workflow" d="M135,366 C135,400 315,390 315,420 C315,445 495,435 495,455" fill="none" stroke="#d29922" stroke-width="2" stroke-dasharray="6 3" opacity="0.6" marker-end="url(#ah2-gold)"/>
+      <circle r="3" fill="#d29922" opacity="0.9"><animateMotion dur="3s" repeatCount="indefinite"><mpath href="#ms-workflow"/></animateMotion></circle>
+
+      <!-- Workflow label -->
+      <rect x="200" y="440" width="420" height="30" rx="8" fill="rgba(210,153,34,0.06)" stroke="rgba(210,153,34,0.2)" stroke-width="1"/>
+      <text x="410" y="460" fill="#d29922" font-size="11" font-weight="500" text-anchor="middle" font-family="'JetBrains Mono',monospace">🔀 Model composes tools from multiple servers seamlessly</text>
+    </svg>
+  </div>
+
+  <h3 class="fade-up">Cross-Server Workflows</h3>
+  <p class="fade-up">Because the model has visibility into all connected servers' tools, it can compose <span class="hi">cross-server workflows</span> without any explicit orchestration code. The model simply calls tools from different servers in sequence, threading context through its reasoning.</p>
+
+  <div class="callout fade-up">
+    <strong>Example workflow:</strong> "Find the failing test, check the related database migration, and open a GitHub issue."
+    The model calls <code>mcp__filesystem__search</code> to find test files, <code>mcp__filesystem__read_file</code> to read the failure, <code>mcp__database__query</code> to check the migration state, then <code>mcp__github__create_issue</code> to file the bug &mdash; four tools, three servers, zero custom orchestration.
+  </div>
+
+  <h3 class="fade-up">Capability Negotiation</h3>
+  <p class="fade-up">When a client connects to a server, they exchange <code>initialize</code> messages that declare supported capabilities. The client advertises what it supports (roots, sampling), and the server declares its primitives (tools, resources, prompts). This negotiation happens once per connection and determines what features are available for the session.</p>
+
+  <pre class="fade-up"><code><span class="cm">// Server capability declaration (during initialize)</span>
+{
+  <span class="str">"capabilities"</span>: {
+    <span class="str">"tools"</span>:     { <span class="str">"listChanged"</span>: <span class="kw">true</span> },
+    <span class="str">"resources"</span>: { <span class="str">"subscribe"</span>: <span class="kw">true</span>, <span class="str">"listChanged"</span>: <span class="kw">true</span> },
+    <span class="str">"prompts"</span>:   { <span class="str">"listChanged"</span>: <span class="kw">true</span> }
+  },
+  <span class="str">"serverInfo"</span>: { <span class="str">"name"</span>: <span class="str">"database"</span>, <span class="str">"version"</span>: <span class="str">"2.1.0"</span> }
+}
+</code></pre>
+
+  <p class="fade-up">The <code>listChanged</code> flag enables dynamic updates: a server can notify the client when its tool list changes (e.g., after a plugin is loaded), and the client re-fetches the catalog. This keeps the model's view of available capabilities current without reconnecting.</p>
+</section>
+
+<!-- Section 6: Transports -->
+<section id="transports">
+  <h2 class="fade-up"><span class="num">06.</span> Transports</h2>
+
+  <p class="fade-up">MCP is transport-agnostic &mdash; the protocol layer defines message semantics, while the transport layer handles how those messages move between client and server. The choice of transport affects deployment topology, latency, and security boundaries.</p>
+
+  <div class="fade-up" style="overflow-x:auto">
+    <table class="comp-table">
+      <thead>
+        <tr>
+          <th>Transport</th>
+          <th>Communication</th>
+          <th>Use Case</th>
+          <th>Auth</th>
+          <th>Setup</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code style="color:var(--stdio)">stdio</code></td>
+          <td>stdin/stdout pipes</td>
+          <td>Local tools, CLI integration</td>
+          <td>Process-level (OS)</td>
+          <td>Simplest</td>
+        </tr>
+        <tr>
+          <td><code style="color:var(--sse)">SSE</code></td>
+          <td>HTTP POST + Server-Sent Events</td>
+          <td>Remote servers, firewalls</td>
+          <td>HTTP headers / OAuth</td>
+          <td>Moderate</td>
+        </tr>
+        <tr class="highlight">
+          <td><code style="color:var(--http)">Streamable HTTP</code></td>
+          <td>Bidirectional HTTP streams</td>
+          <td>Production, scalable deployments</td>
+          <td>Full HTTP auth stack</td>
+          <td>Most flexible</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 class="fade-up">stdio: Local Simplicity</h3>
+  <p class="fade-up">The <code>stdio</code> transport is the simplest: the host spawns the server as a child process and communicates through stdin/stdout pipes. No networking, no ports, no certificates. The host writes JSON-RPC messages to the server's stdin, and reads responses from stdout. Stderr is reserved for logging.</p>
+
+  <p class="fade-up">This is the default for local development and is what Claude Desktop and Claude Code use for locally configured servers. The server process inherits the host's filesystem access and permissions, which makes it ideal for tools that need to read and write local files.</p>
+
+  <h3 class="fade-up">SSE: HTTP-Based Streaming</h3>
+  <p class="fade-up">The Server-Sent Events transport runs over HTTP. The client sends requests via HTTP POST to the server's endpoint, and the server streams responses back through an SSE connection. This works through firewalls, proxies, and load balancers &mdash; anywhere HTTP works, SSE works.</p>
+
+  <p class="fade-up">SSE is a good fit for remote servers running on a different machine or in the cloud. The trade-off is that SSE is <span class="hi">unidirectional for streaming</span> &mdash; the server can push to the client, but the client must initiate a new HTTP request for each message. This is fine for most use cases but limits certain notification patterns.</p>
+
+  <h3 class="fade-up">Streamable HTTP: The Future</h3>
+  <p class="fade-up">The newest transport option, <span class="ac">Streamable HTTP</span>, addresses SSE's limitations. It provides bidirectional streaming over standard HTTP, supports session management, and works with modern infrastructure (reverse proxies, CDNs, container orchestrators). This is the recommended transport for production deployments that need to scale.</p>
+
+  <div class="callout fade-up">
+    <strong>Security model:</strong> MCP inherits the transport's security properties. For stdio, security comes from process isolation and OS-level permissions. For HTTP transports, you get the full HTTP security stack: TLS, OAuth 2.0, API keys, CORS, rate limiting. The protocol specification mandates that servers <em>must not</em> execute destructive operations without explicit user approval, regardless of transport. Hosts are expected to present tool calls for user confirmation before execution.
+  </div>
+</section>
+
+<!-- Section 7: Patterns -->
+<section id="patterns">
+  <h2 class="fade-up"><span class="num">07.</span> Integration Patterns</h2>
+
+  <p class="fade-up">MCP servers fall into recognizable patterns based on what they wrap. Here are the most common archetypes, each with distinct design considerations.</p>
+
+  <div class="pattern-grid fade-up">
+    <div class="pattern-card">
+      <div class="pattern-name"><span style="color:var(--tool)">&#9679;</span> Filesystem Server</div>
+      <div class="pattern-desc">Local file system access with safety boundaries</div>
+      <ul>
+        <li><code>read_file</code>, <code>write_file</code>, <code>list_directory</code></li>
+        <li><code>search_files</code> with glob/regex patterns</li>
+        <li>Path sandboxing to project roots</li>
+        <li>Git-aware: respects <code>.gitignore</code></li>
+        <li>Symlink resolution and permission checks</li>
+      </ul>
+    </div>
+
+    <div class="pattern-card">
+      <div class="pattern-name"><span style="color:var(--resource)">&#9679;</span> Database Server</div>
+      <div class="pattern-desc">Schema introspection and query execution</div>
+      <ul>
+        <li><code>list_tables</code>, <code>describe_table</code> for discovery</li>
+        <li><code>query</code> with read-only enforcement</li>
+        <li>Schema exposed as resources (<code>db://schema</code>)</li>
+        <li>Query result size limits and pagination</li>
+        <li>Connection pooling and timeout management</li>
+      </ul>
+    </div>
+
+    <div class="pattern-card">
+      <div class="pattern-name"><span style="color:var(--prompt)">&#9679;</span> API Wrapper Server</div>
+      <div class="pattern-desc">REST or GraphQL APIs as MCP tools</div>
+      <ul>
+        <li>One tool per API endpoint or operation</li>
+        <li>Auth token management (OAuth refresh)</li>
+        <li>Rate limiting and retry with backoff</li>
+        <li>Response transformation (API JSON to model-friendly text)</li>
+        <li>Pagination abstraction for list endpoints</li>
+      </ul>
+    </div>
+
+    <div class="pattern-card">
+      <div class="pattern-name"><span style="color:var(--sse)">&#9679;</span> Monitoring Server</div>
+      <div class="pattern-desc">Observability tools: metrics, logs, alerts</div>
+      <ul>
+        <li><code>get_metrics</code> with time range filtering</li>
+        <li><code>search_logs</code> with structured queries</li>
+        <li><code>list_alerts</code>, <code>acknowledge_alert</code></li>
+        <li>Resources for dashboards and runbooks</li>
+        <li>Prompts for incident investigation workflows</li>
+      </ul>
+    </div>
+
+    <div class="pattern-card">
+      <div class="pattern-name"><span style="color:var(--http)">&#9679;</span> CI/CD Server</div>
+      <div class="pattern-desc">Build pipelines, deployments, environments</div>
+      <ul>
+        <li><code>get_build_status</code>, <code>get_build_logs</code></li>
+        <li><code>trigger_deploy</code> with environment targeting</li>
+        <li><code>list_environments</code>, <code>rollback</code></li>
+        <li>Resources for build configurations</li>
+        <li>Approval gates for production deployments</li>
+      </ul>
+    </div>
+
+    <div class="pattern-card">
+      <div class="pattern-name"><span style="color:var(--accent)">&#9679;</span> Knowledge Server</div>
+      <div class="pattern-desc">Documentation, wikis, knowledge bases</div>
+      <ul>
+        <li><code>search_docs</code> with semantic matching</li>
+        <li><code>get_page</code>, <code>list_spaces</code></li>
+        <li>Resources for frequently-referenced docs</li>
+        <li>Prompts for contextual Q&A over docs</li>
+        <li>Cache layer for expensive search operations</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 class="fade-up">Design Guidelines</h3>
+  <p class="fade-up">Across all patterns, the same principles apply:</p>
+  <div class="card-grid fade-up">
+    <div class="card">
+      <div class="card-title">Keep tools small</div>
+      <p>Each tool should do one thing. A <code>query_and_format_and_email</code> mega-tool is harder for the model to reason about than three separate tools. Let the model compose.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Fail informatively</div>
+      <p>When a tool fails, return a message the model can act on: "Table 'users' not found. Available tables: accounts, profiles, sessions." Do not return stack traces.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Limit output size</div>
+      <p>Models have context limits. A tool that returns a 50,000-row query result is not helpful. Paginate, summarize, or truncate with a signal that more data exists.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Document constraints</div>
+      <p>Put limits in the tool description: "Max 1000 results", "Read-only", "Requires repo:write scope". The model needs this context to use the tool correctly.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Section 8: Ecosystem -->
+<section id="ecosystem">
+  <h2 class="fade-up"><span class="num">08.</span> Ecosystem</h2>
+
+  <p class="fade-up">MCP's adoption has accelerated rapidly since its release. The protocol is now supported across major AI platforms, with a growing catalog of servers covering everything from developer tools to enterprise integrations.</p>
+
+  <h3 class="fade-up">Official Servers</h3>
+  <p class="fade-up">Anthropic and the MCP community maintain a set of reference servers that cover the most common integration needs:</p>
+
+  <div class="eco-grid fade-up">
+    <div class="eco-card">
+      <div class="eco-title">Developer Tools</div>
+      <div class="eco-items">Filesystem, Git, GitHub, GitLab, Linear, Sentry</div>
+    </div>
+    <div class="eco-card">
+      <div class="eco-title">Databases</div>
+      <div class="eco-items">PostgreSQL, SQLite, MongoDB, Redis, Snowflake</div>
+    </div>
+    <div class="eco-card">
+      <div class="eco-title">Communication</div>
+      <div class="eco-items">Slack, Gmail, Microsoft Teams, Discord</div>
+    </div>
+    <div class="eco-card">
+      <div class="eco-title">Cloud & Infra</div>
+      <div class="eco-items">AWS, GCP, Azure, Kubernetes, Docker, Terraform</div>
+    </div>
+    <div class="eco-card">
+      <div class="eco-title">Knowledge</div>
+      <div class="eco-items">Notion, Confluence, Google Drive, Obsidian</div>
+    </div>
+    <div class="eco-card">
+      <div class="eco-title">Observability</div>
+      <div class="eco-items">Datadog, Grafana, PagerDuty, CloudWatch</div>
+    </div>
+  </div>
+
+  <h3 class="fade-up">IDE Integrations</h3>
+  <p class="fade-up">MCP has become the standard way IDEs and code editors connect AI assistants to development tools:</p>
+  <div class="card-grid fade-up">
+    <div class="card">
+      <div class="card-title">Claude Code</div>
+      <p>Anthropic's CLI tool uses MCP natively. Every tool Claude Code exposes &mdash; file reading, code search, bash execution &mdash; is an MCP server. Users can add custom servers in <code>settings.json</code> and they appear as additional tools immediately.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">VS Code</div>
+      <p>The Claude extension for VS Code supports MCP servers. Configure them in workspace settings and the model gains access to your database, API docs, or any custom tooling alongside code intelligence.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">JetBrains & Cursor</div>
+      <p>JetBrains IDEs and Cursor both support MCP configuration, letting developers extend their AI coding assistants with project-specific tools and data sources without switching contexts.</p>
+    </div>
+  </div>
+
+  <h3 class="fade-up">Production Considerations</h3>
+  <p class="fade-up">Running MCP servers in production requires attention to reliability and operational concerns:</p>
+
+  <div class="card-grid fade-up">
+    <div class="card">
+      <div class="card-title">Rate Limiting</div>
+      <p>Models can be aggressive tool callers. Your server should enforce per-tool and per-session rate limits. Return a clear "rate limited, retry after X" message so the model can back off intelligently.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Caching</div>
+      <p>Resource-heavy tools (database schema introspection, API calls with large responses) benefit from caching. MCP resources support ETags and subscription-based invalidation for cache management.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Observability</div>
+      <p>Instrument your MCP servers with structured logging, metrics (tool call count, latency, error rate), and tracing. OpenTelemetry integration helps correlate MCP calls with broader system traces.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Authorization</div>
+      <p>MCP supports OAuth 2.0 for remote servers. Implement scoped permissions per tool &mdash; a model that can <code>query</code> should not necessarily be able to <code>write</code>. The principle of least privilege applies to AI tool access.</p>
+    </div>
+  </div>
+
+  <div class="callout fade-up">
+    <strong>Where MCP is headed:</strong> The protocol continues to evolve. Key areas of development include <span class="hi">agent-to-agent communication</span> (MCP servers that themselves invoke other MCP servers), <span class="hi">streaming tool results</span> for long-running operations, and <span class="hi">standardized authentication flows</span> that remove the current friction of configuring credentials per-server. The open specification model means the community is actively shaping these directions.
+  </div>
+</section>
+
+</div><!-- /.container -->
+
+<div class="footer">
+  <a href="../">&larr; Back to portfolio</a> &middot; Anvesh Jarabani &middot; July 2026
+</div>
+
+<script>
+// Spotlight effect
+const sp = document.getElementById('spotlight');
+document.addEventListener('mousemove', e => {
+  sp.style.background = `radial-gradient(600px at ${e.clientX}px ${e.clientY}px, rgba(29,78,216,0.06), transparent 80%)`;
+});
+
+// Fade-up animation
+const fadeObs = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); fadeObs.unobserve(e.target); } });
+}, { threshold: 0.1 });
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+window.scrollTo(0, 0);
+document.querySelectorAll('.fade-up').forEach(el => {
+  if (el.getBoundingClientRect().top < window.innerHeight) { el.classList.add('visible'); }
+  else { el.style.opacity = '0'; fadeObs.observe(el); }
+});
+
+// Scroll-spy
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('.top-bar nav a');
+const spyObs = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      navLinks.forEach(l => l.classList.remove('active'));
+      const link = document.querySelector(`.top-bar nav a[href="#${e.target.id}"]`);
+      if (link) link.classList.add('active');
+    }
+  });
+}, { rootMargin: '-30% 0px -70% 0px' });
+sections.forEach(s => spyObs.observe(s));
+
+// Smooth scroll for nav clicks
+document.querySelectorAll(".top-bar nav a[href^=\"#\"]").forEach(function(a){
+  a.addEventListener("click",function(e){
+    e.preventDefault();
+    var t=document.querySelector(this.getAttribute("href"));
+    if(t)t.scrollIntoView({behavior:"smooth",block:"start"});
+    history.pushState(null,"",this.getAttribute("href"));
+  });
+});
+
+// Staggered card reveal
+const cardObs = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      const cards = e.target.querySelectorAll('.card, .prim-card, .pattern-card, .eco-card, .fan-item, .flow-node, .arch-box');
+      cards.forEach((c, i) => {
+        c.style.opacity = '0';
+        c.style.transform = 'translateY(12px)';
+        c.style.transition = 'opacity .4s ease, transform .4s ease';
+        setTimeout(() => { c.style.opacity = '1'; c.style.transform = 'translateY(0)'; }, i * 80);
+      });
+      cardObs.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.1 });
+document.querySelectorAll('.card-grid, .prim-grid, .pattern-grid, .eco-grid, .fan-row, .arch-layer, .flow-diagram').forEach(el => cardObs.observe(el));
+</script>
+
+</body>
+</html>

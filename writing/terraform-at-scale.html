@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Terraform at Scale: IaC Architecture — Anvesh Jarabani</title>
+<script>if("scrollRestoration" in history)history.scrollRestoration="manual";if(location.hash)history.replaceState(null,"",location.pathname);window.addEventListener("DOMContentLoaded",function(){window.scrollTo(0,0)});window.addEventListener("load",function(){window.scrollTo(0,0)});</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a192f;--bg-light:#112240;--border:#233554;
+  --text:#ccd6f6;--text-sec:#a8b2d1;--text-dim:#495670;
+  --accent:#64ffda;--accent-dim:rgba(100,255,218,0.1);
+  --white:#e6f1ff;
+  --red:#f85149;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--gold:#d29922;--teal:#39d2c0;
+}
+::selection{background:rgba(100,255,218,0.2)}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;font-size:15px}
+a{color:var(--accent);text-decoration:none;transition:opacity .2s}
+a:hover{opacity:.8}
+code,.mono{font-family:'JetBrains Mono',monospace;font-size:13px;background:rgba(100,255,218,0.07);padding:2px 6px;border-radius:4px;color:var(--accent)}
+pre{background:var(--bg-light);border:1px solid var(--border);border-radius:8px;padding:20px;overflow-x:auto;margin:16px 0;line-height:1.5}
+pre code{background:none;padding:0;font-size:13px;color:var(--text)}
+
+/* Layout */
+.top-bar{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(10,25,47,0.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between}
+.top-bar .back{font-size:13px;color:var(--text-sec);display:flex;align-items:center;gap:6px}
+.top-bar .back:hover{color:var(--accent)}
+.top-bar nav{display:flex;gap:20px}
+.top-bar nav a{font-size:12px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-dim);transition:color .2s}
+.top-bar nav a.active{color:var(--accent)}
+.top-bar nav a:hover{color:var(--text-sec);opacity:1}
+
+.container{max-width:900px;margin:0 auto;padding:92px 24px 60px}
+.hero-title{font-size:clamp(28px,4vw,40px);font-weight:800;color:var(--white);margin-bottom:8px;letter-spacing:-0.5px}
+.hero-sub{font-size:16px;color:var(--text-sec);margin-bottom:8px}
+.hero-meta{font-size:13px;color:var(--text-dim);margin-bottom:40px;display:flex;gap:16px;flex-wrap:wrap}
+
+section{padding:48px 0;border-bottom:1px solid var(--border)}
+section:last-of-type{border-bottom:none}
+.section-title{font-size:13px;text-transform:uppercase;letter-spacing:2px;color:var(--accent);margin-bottom:24px;font-weight:600}
+p.body{color:var(--text-sec);margin-bottom:16px;line-height:1.7}
+
+/* Fade-in */
+.fade-up{transform:translateY(16px);transition:opacity .5s ease,transform .5s ease}
+.fade-up.visible{opacity:1;transform:translateY(0)}
+.hi{color:var(--white);font-weight:600}
+.ac{color:var(--accent);font-weight:700}
+
+/* Cards */
+.card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin:20px 0}
+.card{background:var(--bg-light);border:1px solid var(--border);border-radius:8px;padding:20px;transition:all .25s}
+.card:hover{border-color:var(--text-dim);background:rgba(100,255,218,0.03);box-shadow:0 4px 20px rgba(0,0,0,0.2)}
+.card .card-title{font-size:14px;font-weight:600;color:var(--white);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.card .card-title .icon{font-size:16px}
+.card p,.card li{font-size:13px;color:var(--text-sec);line-height:1.6}
+.card ul{list-style:none;padding:0}
+.card li{padding:3px 0}
+.card li::before{content:"→ ";color:var(--accent);font-size:12px}
+
+/* Pain/stat cards */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:20px 0}
+.stat-card{background:var(--bg-light);border:1px solid var(--border);border-radius:8px;padding:16px;text-align:center;transition:all .25s}
+.stat-card:hover{border-color:var(--gold);box-shadow:0 0 20px rgba(210,153,34,0.08)}
+.stat-card .stat-num{font-size:28px;font-weight:800;color:var(--gold);margin-bottom:4px}
+.stat-card .stat-label{font-size:12px;color:var(--text-dim)}
+
+/* Architecture flow diagram */
+.arch-flow{display:flex;flex-direction:column;align-items:center;gap:0;margin:32px 0}
+.arch-layer{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;width:100%}
+.arch-box{background:var(--bg-light);border:1px solid var(--border);border-radius:8px;padding:16px 20px;text-align:center;flex:1;min-width:160px;max-width:260px;position:relative;transition:border-color .3s,box-shadow .3s}
+.arch-box:hover{border-color:var(--text-dim);box-shadow:0 4px 20px rgba(0,0,0,0.3)}
+.arch-box .label{font-size:14px;font-weight:600;color:var(--white);margin-bottom:4px}
+.arch-box .sub{font-size:11px;color:var(--text-dim);font-family:'JetBrains Mono',monospace}
+.arch-connectors{display:flex;justify-content:center;gap:40px;height:44px;align-items:center}
+.arch-arrow{display:flex;flex-direction:column;align-items:center;gap:0}
+.arch-arrow .arrow-label{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.arch-arrow .line{width:2px;height:20px;background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 4px,transparent 4px,transparent 8px);animation:dash-flow 1.5s linear infinite}
+.arch-arrow .arrow-head{width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid var(--border)}
+@keyframes dash-flow{from{background-position:0 0}to{background-position:0 8px}}
+
+/* Module boxes — color variants */
+.arch-box.shared{border-color:rgba(188,140,255,0.3)}
+.arch-box.shared .label{color:var(--purple)}
+.arch-box.root{border-color:rgba(88,166,255,0.3)}
+.arch-box.root .label{color:var(--blue)}
+.arch-box.env{border-color:rgba(63,185,80,0.3)}
+.arch-box.env .label{color:var(--green)}
+.arch-box.infra{border-color:rgba(100,255,218,0.3)}
+.arch-box.infra .label{color:var(--accent)}
+
+/* Sequence / step flow */
+.step-flow{display:flex;flex-direction:column;gap:0;margin:24px 0}
+.step-item{display:flex;align-items:flex-start;gap:16px;padding:16px 0}
+.step-num{width:28px;height:28px;border-radius:50%;background:var(--accent-dim);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;margin-top:2px}
+.step-content{flex:1}
+.step-actor{font-size:12px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.step-desc{font-size:13px;color:var(--text-sec)}
+
+/* Comparison table */
+.comp-table{width:100%;border-collapse:collapse;margin:20px 0;font-size:13px}
+.comp-table th{text-align:left;padding:10px 14px;border-bottom:2px solid var(--border);color:var(--text-dim);font-size:11px;text-transform:uppercase;letter-spacing:1px;font-weight:600}
+.comp-table td{padding:10px 14px;border-bottom:1px solid var(--border);color:var(--text-sec)}
+.comp-table tr:hover td{background:var(--accent-dim)}
+.comp-table tr.highlight td{color:var(--accent);font-weight:600}
+.comp-table .check{color:var(--green);font-weight:700}
+.comp-table .cross{color:var(--red)}
+.comp-table .partial{color:var(--gold)}
+
+/* GCP pattern cards */
+.gcp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin:20px 0}
+.gcp-card{background:var(--bg-light);border:1px solid var(--border);border-radius:8px;padding:20px;transition:all .25s}
+.gcp-card:hover{border-color:var(--blue);box-shadow:0 0 20px rgba(88,166,255,0.08)}
+.gcp-card .gcp-name{font-size:15px;font-weight:600;color:var(--blue);margin-bottom:6px}
+.gcp-card .gcp-desc{font-size:13px;color:var(--text-sec);line-height:1.6}
+
+/* Pipeline flow (vertical) */
+.pipe-flow{display:flex;flex-direction:column;align-items:center;gap:0;margin:24px 0}
+.pipe-node{background:var(--bg-light);border:1px solid var(--border);border-radius:8px;padding:14px 28px;min-width:400px;transition:border-color .3s}
+.pipe-node:hover{border-color:var(--text-dim)}
+.pipe-node .pn-title{font-size:14px;font-weight:600;color:var(--white)}
+.pipe-node .pn-desc{font-size:12px;color:var(--text-dim)}
+.pipe-connector{display:flex;flex-direction:column;align-items:center}
+.pipe-connector .vline{width:2px;height:16px;background:var(--border)}
+.pipe-connector .arrow-down{width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid var(--border)}
+
+/* Governance stack */
+.gov-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:20px 0}
+.gov-card{background:var(--bg-light);border:1px solid var(--border);border-radius:8px;padding:16px;transition:all .25s}
+.gov-card:hover{border-color:var(--teal);box-shadow:0 0 20px rgba(57,210,192,0.08)}
+.gov-card .gov-name{font-size:14px;font-weight:600;color:var(--teal);margin-bottom:4px}
+.gov-card .gov-focus{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
+.gov-card .gov-desc{font-size:12px;color:var(--text-sec)}
+
+/* Org hierarchy */
+.hierarchy{display:flex;flex-direction:column;align-items:center;gap:0;margin:24px 0}
+.h-level{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;width:100%}
+.h-box{background:var(--bg-light);border:1px solid var(--border);border-radius:8px;padding:12px 16px;text-align:center;flex:1;min-width:120px;max-width:200px;transition:border-color .3s}
+.h-box:hover{border-color:var(--text-dim)}
+.h-box .h-label{font-size:13px;font-weight:600;color:var(--white);margin-bottom:2px}
+.h-box .h-sub{font-size:10px;color:var(--text-dim);font-family:'JetBrains Mono',monospace}
+.h-connector{display:flex;flex-direction:column;align-items:center}
+.h-connector .vline{width:2px;height:14px;background:var(--border)}
+.h-connector .arrow-down{width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid var(--border)}
+
+/* Callout */
+.callout{background:var(--accent-dim);border:1px solid rgba(100,255,218,0.15);border-radius:8px;padding:16px 20px;margin:20px 0;font-size:13px;color:var(--text-sec);line-height:1.6}
+.callout strong{color:var(--accent)}
+.callout code{background:rgba(100,255,218,0.12)}
+
+/* Warning callout */
+.callout-warn{background:rgba(248,81,73,0.06);border:1px solid rgba(248,81,73,0.15);border-radius:8px;padding:16px 20px;margin:20px 0;font-size:13px;color:var(--text-sec);line-height:1.6}
+.callout-warn strong{color:var(--red)}
+
+/* Legend */
+.arch-legend{display:flex;gap:20px;flex-wrap:wrap;justify-content:center;margin-top:24px}
+.arch-legend span{font-size:11px;display:flex;align-items:center;gap:6px;color:var(--text-dim)}
+.arch-legend .dot{width:8px;height:8px;border-radius:50%}
+
+/* Spotlight */
+#spotlight{position:fixed;inset:0;z-index:0;pointer-events:none;transition:background .15s}
+.container,.top-bar{position:relative;z-index:1}
+
+/* Footer */
+.footer{text-align:center;padding:40px 24px;font-size:12px;color:var(--text-dim)}
+.footer a{color:var(--text-sec)}.footer a:hover{color:var(--accent)}
+
+/* Responsive */
+@media(max-width:600px){
+  .top-bar nav{display:none}
+  .arch-layer,.h-level{flex-direction:column;align-items:center}
+  .arch-box,.h-box{max-width:100%}
+  .card-grid{grid-template-columns:1fr}
+  .stat-grid{grid-template-columns:repeat(2,1fr)}
+  .gcp-grid{grid-template-columns:1fr}
+  .gov-grid{grid-template-columns:1fr}
+  .pipe-node{min-width:auto;width:100%}
+  .comp-table{font-size:11px}
+  .comp-table th,.comp-table td{padding:8px 10px}
+}
+</style>
+</head>
+<body>
+
+<div id="spotlight"></div>
+
+<div class="top-bar">
+  <a href="../" class="back">&larr; anveshjarabani.com</a>
+  <nav>
+    <a href="#overview">Overview</a>
+    <a href="#modules">Modules</a>
+    <a href="#state">State</a>
+    <a href="#environments">Envs</a>
+    <a href="#cicd">CI/CD</a>
+    <a href="#gcp">GCP</a>
+    <a href="#governance">Governance</a>
+  </nav>
+</div>
+
+<div class="container">
+
+  <div class="fade-up">
+    <h1 class="hero-title">Terraform at Scale: IaC Architecture</h1>
+    <p class="hero-sub">Module design, state management, multi-environment patterns, CI/CD automation, and GCP-specific patterns for managing 20+ Terraform repos across a large organization.</p>
+    <div class="hero-meta">
+      <span>Anvesh Jarabani</span>
+      <span>&middot;</span>
+      <span>July 2026</span>
+      <span>&middot;</span>
+      <span>14 min read</span>
+    </div>
+  </div>
+
+  <!-- Overview -->
+  <section id="overview">
+    <div class="section-title fade-up">Why Scale Changes Everything</div>
+    <p class="body fade-up">
+      A single Terraform project is straightforward. One <code>main.tf</code>, one state file, one person running <code>terraform apply</code> from their laptop. But at <span class="hi">20+ repositories</span> with multiple teams, multiple environments, and hundreds of GCP resources, everything breaks. The workflow that worked for one project becomes a liability at scale.
+    </p>
+
+    <div class="stat-grid fade-up">
+      <div class="stat-card">
+        <div class="stat-num">20+</div>
+        <div class="stat-label">Terraform repositories</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">60+</div>
+        <div class="stat-label">state files (3 envs each)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">15+</div>
+        <div class="stat-label">shared modules</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">3</div>
+        <div class="stat-label">environments per service</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">0</div>
+        <div class="stat-label">manual applies to prod</div>
+      </div>
+    </div>
+
+    <p class="body fade-up">
+      At this scale, five problems dominate: <span class="hi">configuration sprawl</span> (copy-paste HCL across repos), <span class="hi">state conflicts</span> (two engineers running apply simultaneously), <span class="hi">environment parity</span> (dev drifts from prod), <span class="hi">blast radius</span> (one bad apply takes down networking for every service), and <span class="hi">module governance</span> (who owns shared modules, how do upgrades propagate).
+    </p>
+
+    <div class="callout fade-up">
+      <strong>The organizing principle:</strong> Treat Terraform like application code. Modules get versioned releases. State files get isolated per service and environment. Changes go through PR review with automated plans. Nobody runs <code>terraform apply</code> from a laptop against production.
+    </div>
+  </section>
+
+  <!-- Modules -->
+  <section id="modules">
+    <div class="section-title fade-up">Module Architecture</div>
+    <p class="body fade-up">
+      The module hierarchy has three layers: <span class="ac">shared modules</span> (reusable building blocks), <span class="ac">root modules</span> (per-service deployable units), and <span class="ac">environment configs</span> (tfvars that parameterize each deployment). Shared modules are versioned via Git tags. Root modules pin to specific versions. Environment configs change values, not structure.
+    </p>
+
+    <!-- Module Architecture SVG Diagram -->
+    <div class="fade-up" style="margin:24px 0;overflow-x:auto">
+      <svg viewBox="0 0 880 520" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:880px;display:block;margin:0 auto" font-family="'Inter',system-ui,sans-serif">
+        <defs>
+          <marker id="ah-purple" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#bc8cff"/></marker>
+          <marker id="ah-blue" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#58a6ff"/></marker>
+          <marker id="ah-green" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#3fb950"/></marker>
+          <marker id="ah-teal" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#39d2c0"/></marker>
+        </defs>
+
+        <!-- Dashed container: Shared Modules -->
+        <rect x="20" y="10" width="840" height="80" rx="12" fill="rgba(188,140,255,0.04)" stroke="rgba(188,140,255,0.15)" stroke-width="1.5" stroke-dasharray="8 4"/>
+        <text x="40" y="30" fill="#bc8cff" font-size="10" font-weight="600" text-transform="uppercase" letter-spacing="1.5">📦 SHARED MODULES</text>
+
+        <!-- Shared module cards -->
+        <rect x="40" y="38" width="180" height="42" rx="10" fill="#161b22" stroke="rgba(188,140,255,0.4)" stroke-width="1.2"/>
+        <text x="130" y="55" fill="#e6f1ff" font-size="12" font-weight="600" text-anchor="middle">terraform-gcp-vpc</text>
+        <text x="130" y="70" fill="#495670" font-size="9" font-weight="500" text-anchor="middle" font-family="'JetBrains Mono',monospace">v2.4.0 · networking</text>
+
+        <rect x="240" y="38" width="180" height="42" rx="10" fill="#161b22" stroke="rgba(188,140,255,0.4)" stroke-width="1.2"/>
+        <text x="330" y="55" fill="#e6f1ff" font-size="12" font-weight="600" text-anchor="middle">terraform-gcp-gke</text>
+        <text x="330" y="70" fill="#495670" font-size="9" font-weight="500" text-anchor="middle" font-family="'JetBrains Mono',monospace">v3.1.0 · compute</text>
+
+        <rect x="440" y="38" width="190" height="42" rx="10" fill="#161b22" stroke="rgba(188,140,255,0.4)" stroke-width="1.2"/>
+        <text x="535" y="55" fill="#e6f1ff" font-size="12" font-weight="600" text-anchor="middle">terraform-gcp-cloudsql</text>
+        <text x="535" y="70" fill="#495670" font-size="9" font-weight="500" text-anchor="middle" font-family="'JetBrains Mono',monospace">v1.8.0 · databases</text>
+
+        <rect x="650" y="38" width="180" height="42" rx="10" fill="#161b22" stroke="rgba(188,140,255,0.4)" stroke-width="1.2"/>
+        <text x="740" y="55" fill="#e6f1ff" font-size="12" font-weight="600" text-anchor="middle">terraform-gcp-iam</text>
+        <text x="740" y="70" fill="#495670" font-size="9" font-weight="500" text-anchor="middle" font-family="'JetBrains Mono',monospace">v2.0.1 · identity</text>
+
+        <!-- Bezier paths from shared modules down to root modules -->
+        <path id="mod-path-1" d="M130,80 C130,130 220,140 220,185" fill="none" stroke="rgba(188,140,255,0.3)" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-purple)"/>
+        <circle r="2.5" fill="#bc8cff" opacity="0.8"><animateMotion dur="2.2s" repeatCount="indefinite"><mpath href="#mod-path-1"/></animateMotion></circle>
+
+        <path id="mod-path-2" d="M330,80 C330,130 340,140 340,185" fill="none" stroke="rgba(188,140,255,0.3)" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-purple)"/>
+        <circle r="2.5" fill="#bc8cff" opacity="0.8"><animateMotion dur="2s" repeatCount="indefinite"><mpath href="#mod-path-2"/></animateMotion></circle>
+
+        <path id="mod-path-3" d="M535,80 C535,130 440,140 440,185" fill="none" stroke="rgba(188,140,255,0.3)" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-purple)"/>
+        <circle r="2.5" fill="#bc8cff" opacity="0.8"><animateMotion dur="2.4s" repeatCount="indefinite"><mpath href="#mod-path-3"/></animateMotion></circle>
+
+        <path id="mod-path-4" d="M740,80 C740,130 660,140 660,185" fill="none" stroke="rgba(188,140,255,0.3)" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-purple)"/>
+        <circle r="2.5" fill="#bc8cff" opacity="0.8"><animateMotion dur="1.8s" repeatCount="indefinite"><mpath href="#mod-path-4"/></animateMotion></circle>
+
+        <!-- Step number on connector -->
+        <circle cx="440" cy="130" r="10" fill="#0a192f" stroke="#bc8cff" stroke-width="1.2"/>
+        <text x="440" y="133" fill="#bc8cff" font-size="9" font-weight="700" text-anchor="middle">1</text>
+        <text x="460" y="133" fill="#495670" font-size="9" font-style="italic">versioned git refs</text>
+
+        <!-- Dashed container: Root Modules -->
+        <rect x="80" y="170" width="720" height="80" rx="12" fill="rgba(88,166,255,0.04)" stroke="rgba(88,166,255,0.15)" stroke-width="1.5" stroke-dasharray="8 4"/>
+        <text x="100" y="190" fill="#58a6ff" font-size="10" font-weight="600" text-transform="uppercase" letter-spacing="1.5">🏗️ ROOT MODULES</text>
+
+        <!-- Root module cards -->
+        <rect x="100" y="198" width="210" height="42" rx="10" fill="#161b22" stroke="rgba(88,166,255,0.4)" stroke-width="1.2"/>
+        <text x="205" y="215" fill="#e6f1ff" font-size="12" font-weight="600" text-anchor="middle">terraform-gcp-analytics</text>
+        <text x="205" y="230" fill="#495670" font-size="9" font-weight="500" text-anchor="middle" font-family="'JetBrains Mono',monospace">BigQuery + Datastream</text>
+
+        <rect x="335" y="198" width="210" height="42" rx="10" fill="#161b22" stroke="rgba(88,166,255,0.4)" stroke-width="1.2"/>
+        <text x="440" y="215" fill="#e6f1ff" font-size="12" font-weight="600" text-anchor="middle">terraform-gcp-networking</text>
+        <text x="440" y="230" fill="#495670" font-size="9" font-weight="500" text-anchor="middle" font-family="'JetBrains Mono',monospace">Shared VPC + firewall</text>
+
+        <rect x="570" y="198" width="210" height="42" rx="10" fill="#161b22" stroke="rgba(88,166,255,0.4)" stroke-width="1.2"/>
+        <text x="675" y="215" fill="#e6f1ff" font-size="12" font-weight="600" text-anchor="middle">terraform-gcp-platform</text>
+        <text x="675" y="230" fill="#495670" font-size="9" font-weight="500" text-anchor="middle" font-family="'JetBrains Mono',monospace">GKE + services</text>
+
+        <!-- Bezier paths from root modules down to env configs -->
+        <path id="env-path-1" d="M205,240 C205,280 240,290 240,330" fill="none" stroke="rgba(88,166,255,0.3)" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-blue)"/>
+        <circle r="2.5" fill="#58a6ff" opacity="0.8"><animateMotion dur="2s" repeatCount="indefinite"><mpath href="#env-path-1"/></animateMotion></circle>
+
+        <path id="env-path-2" d="M440,240 C440,280 440,290 440,330" fill="none" stroke="rgba(88,166,255,0.3)" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-blue)"/>
+        <circle r="2.5" fill="#58a6ff" opacity="0.8"><animateMotion dur="2.2s" repeatCount="indefinite"><mpath href="#env-path-2"/></animateMotion></circle>
+
+        <path id="env-path-3" d="M675,240 C675,280 640,290 640,330" fill="none" stroke="rgba(88,166,255,0.3)" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-blue)"/>
+        <circle r="2.5" fill="#58a6ff" opacity="0.8"><animateMotion dur="1.8s" repeatCount="indefinite"><mpath href="#env-path-3"/></animateMotion></circle>
+
+        <!-- Step number on connector -->
+        <circle cx="440" cy="285" r="10" fill="#0a192f" stroke="#58a6ff" stroke-width="1.2"/>
+        <text x="440" y="288" fill="#58a6ff" font-size="9" font-weight="700" text-anchor="middle">2</text>
+        <text x="460" y="288" fill="#495670" font-size="9" font-style="italic">tfvars per environment</text>
+
+        <!-- Dashed container: Environment Configs -->
+        <rect x="140" y="320" width="600" height="80" rx="12" fill="rgba(63,185,80,0.04)" stroke="rgba(63,185,80,0.15)" stroke-width="1.5" stroke-dasharray="8 4"/>
+        <text x="160" y="340" fill="#3fb950" font-size="10" font-weight="600" text-transform="uppercase" letter-spacing="1.5">⚙️ ENVIRONMENT CONFIGS</text>
+
+        <!-- Env config cards -->
+        <rect x="160" y="348" width="170" height="42" rx="10" fill="#161b22" stroke="rgba(63,185,80,0.4)" stroke-width="1.2"/>
+        <text x="245" y="365" fill="#e6f1ff" font-size="12" font-weight="600" text-anchor="middle">dev.tfvars</text>
+        <text x="245" y="380" fill="#495670" font-size="9" font-weight="500" text-anchor="middle" font-family="'JetBrains Mono',monospace">sandbox / iterate</text>
+
+        <rect x="355" y="348" width="170" height="42" rx="10" fill="#161b22" stroke="rgba(63,185,80,0.4)" stroke-width="1.2"/>
+        <text x="440" y="365" fill="#e6f1ff" font-size="12" font-weight="600" text-anchor="middle">staging.tfvars</text>
+        <text x="440" y="380" fill="#495670" font-size="9" font-weight="500" text-anchor="middle" font-family="'JetBrains Mono',monospace">pre-prod validation</text>
+
+        <rect x="550" y="348" width="170" height="42" rx="10" fill="#161b22" stroke="rgba(63,185,80,0.4)" stroke-width="1.2"/>
+        <text x="635" y="365" fill="#e6f1ff" font-size="12" font-weight="600" text-anchor="middle">prod.tfvars</text>
+        <text x="635" y="380" fill="#495670" font-size="9" font-weight="500" text-anchor="middle" font-family="'JetBrains Mono',monospace">production</text>
+
+        <!-- Bezier paths from env configs down to deployed infra -->
+        <path id="deploy-path-1" d="M245,390 C245,420 380,430 380,460" fill="none" stroke="rgba(63,185,80,0.3)" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-green)"/>
+        <circle r="2.5" fill="#3fb950" opacity="0.8"><animateMotion dur="2s" repeatCount="indefinite"><mpath href="#deploy-path-1"/></animateMotion></circle>
+
+        <path id="deploy-path-2" d="M440,390 C440,420 440,430 440,460" fill="none" stroke="rgba(63,185,80,0.3)" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-green)"/>
+        <circle r="2.5" fill="#3fb950" opacity="0.8"><animateMotion dur="2.2s" repeatCount="indefinite"><mpath href="#deploy-path-2"/></animateMotion></circle>
+
+        <path id="deploy-path-3" d="M635,390 C635,420 500,430 500,460" fill="none" stroke="rgba(63,185,80,0.3)" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-green)"/>
+        <circle r="2.5" fill="#3fb950" opacity="0.8"><animateMotion dur="1.8s" repeatCount="indefinite"><mpath href="#deploy-path-3"/></animateMotion></circle>
+
+        <!-- Step number on connector -->
+        <circle cx="440" cy="430" r="10" fill="#0a192f" stroke="#3fb950" stroke-width="1.2"/>
+        <text x="440" y="433" fill="#3fb950" font-size="9" font-weight="700" text-anchor="middle">3</text>
+        <text x="460" y="433" fill="#495670" font-size="9" font-style="italic">spacelift apply</text>
+
+        <!-- Deployed Infrastructure card -->
+        <rect x="260" y="455" width="360" height="48" rx="10" fill="#161b22" stroke="rgba(57,210,192,0.4)" stroke-width="1.2"/>
+        <text x="440" y="475" fill="#39d2c0" font-size="13" font-weight="700" text-anchor="middle">🚀 Deployed Infrastructure</text>
+        <text x="440" y="492" fill="#495670" font-size="9" font-weight="500" text-anchor="middle" font-family="'JetBrains Mono',monospace">GCP projects · resources · IAM</text>
+
+        <!-- Legend -->
+        <circle cx="240" cy="515" r="4" fill="#bc8cff"/><text x="250" y="518" fill="#495670" font-size="10">Shared Modules</text>
+        <circle cx="370" cy="515" r="4" fill="#58a6ff"/><text x="380" y="518" fill="#495670" font-size="10">Root Modules</text>
+        <circle cx="490" cy="515" r="4" fill="#3fb950"/><text x="500" y="518" fill="#495670" font-size="10">Environment Configs</text>
+        <circle cx="640" cy="515" r="4" fill="#39d2c0"/><text x="650" y="518" fill="#495670" font-size="10">Deployed Resources</text>
+      </svg>
+    </div>
+
+    <div class="card-grid fade-up">
+      <div class="card">
+        <div class="card-title">Shared Modules</div>
+        <ul>
+          <li>One repo per module (<code>terraform-gcp-*</code>)</li>
+          <li>Semantic versioned via Git tags</li>
+          <li>Input variables with <code>validation</code> blocks</li>
+          <li>Full <code>terraform-docs</code> auto-generated README</li>
+          <li>Tested with <code>terratest</code> or <code>tftest</code></li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-title">Root Modules</div>
+        <ul>
+          <li>Per-service or per-domain scope</li>
+          <li>Composes 3-8 shared modules</li>
+          <li>Owns its own state file per environment</li>
+          <li>Pinned module versions: <code>?ref=v2.4.0</code></li>
+          <li>Backend config in <code>backend.tf</code></li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-title">Module Composition</div>
+        <ul>
+          <li>Modules calling modules (max 2 levels deep)</li>
+          <li><code>moved</code> blocks for safe refactoring</li>
+          <li>Version pinning prevents surprise upgrades</li>
+          <li>Upgrade PRs trigger plan diffs for review</li>
+          <li>Breaking changes require major version bump</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-title">Version Strategy</div>
+        <ul>
+          <li><span class="hi">Major:</span> Breaking changes, removed variables</li>
+          <li><span class="hi">Minor:</span> New features, new optional variables</li>
+          <li><span class="hi">Patch:</span> Bug fixes, doc updates</li>
+          <li>CHANGELOG.md per shared module</li>
+          <li>Dependabot-style automated upgrade PRs</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout fade-up">
+      <strong>Anti-pattern:</strong> Monorepo with all Terraform in one repo. At 20+ services, the blast radius is too large, CI is too slow, and CODEOWNERS becomes unmanageable. Keep one repo per root module and one repo per shared module.
+    </div>
+
+    <pre class="fade-up"><code><span style="color:var(--text-dim)"># Root module sourcing a shared module with version pin</span>
+module "vpc" {
+  source = "git::https://github.com/org/terraform-gcp-vpc.git?ref=v2.4.0"
+
+  project_id   = var.project_id
+  network_name = "${var.env}-shared-vpc"
+  subnets      = var.subnets
+  secondary_ranges = var.secondary_ranges
+}
+
+module "gke" {
+  source = "git::https://github.com/org/terraform-gcp-gke.git?ref=v3.1.0"
+
+  project_id     = var.project_id
+  network        = module.vpc.network_self_link
+  subnetwork     = module.vpc.subnets["us-central1/platform"].self_link
+  cluster_name   = "${var.env}-platform"
+  node_pools     = var.node_pools
+}</code></pre>
+  </section>
+
+  <!-- State -->
+  <section id="state">
+    <div class="section-title fade-up">State Management</div>
+    <p class="body fade-up">
+      State is the single most fragile piece of Terraform at scale. A corrupted state file or a concurrent modification can destroy infrastructure. The rules: <span class="hi">one state file per service per environment</span>, remote backends with locking, encryption at rest, and strict access controls.
+    </p>
+
+    <div class="card-grid fade-up">
+      <div class="card">
+        <div class="card-title">Remote Backend (GCS)</div>
+        <ul>
+          <li>GCS bucket per GCP project</li>
+          <li>Object versioning enabled (rollback)</li>
+          <li>Uniform bucket-level access (no ACLs)</li>
+          <li>Customer-managed encryption key (CMEK)</li>
+          <li>Lifecycle: 90-day noncurrent version retention</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-title">State Locking</div>
+        <ul>
+          <li>GCS backend uses atomic object locking</li>
+          <li>Lock file: <code>.tflock</code> in the same bucket</li>
+          <li>Force-unlock only by infra leads</li>
+          <li>CI/CD handles lock acquisition automatically</li>
+          <li>Stale lock detection: 30-minute timeout</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-title">State Isolation</div>
+        <ul>
+          <li>Prefix: <code>env/service/terraform.tfstate</code></li>
+          <li>Separate state per root module per env</li>
+          <li>Cross-service refs via <code>terraform_remote_state</code></li>
+          <li>Or better: data sources instead of state refs</li>
+          <li>Never share state across environments</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-title">State Surgery</div>
+        <ul>
+          <li><code>terraform state mv</code> for refactoring</li>
+          <li><code>terraform import</code> for adopting existing resources</li>
+          <li><code>terraform state rm</code> to release resources from management</li>
+          <li><code>terraform state pull/push</code> for bulk operations</li>
+          <li>Always back up state before surgery</li>
+        </ul>
+      </div>
+    </div>
+
+    <pre class="fade-up"><code><span style="color:var(--text-dim)"># backend.tf — GCS remote state with per-environment prefix</span>
+terraform {
+  backend "gcs" {
+    bucket = "org-terraform-state-prod"
+    prefix = "analytics/terraform.tfstate"
+  }
+}
+
+<span style="color:var(--text-dim)"># Cross-service reference via data source (preferred over remote_state)</span>
+data "google_compute_network" "shared_vpc" {
+  name    = "shared-vpc"
+  project = var.host_project_id
+}</code></pre>
+
+    <div class="callout-warn fade-up">
+      <strong>Never:</strong> Store state locally. Share one state file across multiple services. Use <code>terraform_remote_state</code> across team boundaries (tight coupling). Let developers force-unlock state without understanding why it was locked.
+    </div>
+
+    <p class="body fade-up" style="margin-top:20px">
+      <span class="hi">Workspace vs. directory isolation:</span> Workspaces (<code>terraform workspace select dev</code>) share the same backend config and differ only by state key. Directories use separate <code>backend.tf</code> per environment. At scale, <span class="ac">directory-based isolation wins</span> because workspaces share a single backend configuration and make it too easy to accidentally apply dev changes to prod.
+    </p>
+  </section>
+
+  <!-- Environments -->
+  <section id="environments">
+    <div class="section-title fade-up">Multi-Environment Patterns</div>
+    <p class="body fade-up">
+      Four common patterns exist for managing multiple environments. Each trades off simplicity for safety. The right choice depends on team size, compliance requirements, and how much environment parity you need.
+    </p>
+
+    <table class="comp-table fade-up">
+      <thead>
+        <tr><th>Pattern</th><th>Isolation</th><th>Parity</th><th>Complexity</th><th>Best For</th></tr>
+      </thead>
+      <tbody>
+        <tr class="highlight">
+          <td>tfvars-per-env</td>
+          <td><span class="check">High</span></td>
+          <td><span class="check">Exact</span></td>
+          <td><span class="check">Low</span></td>
+          <td>Most teams</td>
+        </tr>
+        <tr>
+          <td>Directory-per-env</td>
+          <td><span class="check">High</span></td>
+          <td><span class="partial">Manual</span></td>
+          <td><span class="partial">Medium</span></td>
+          <td>Divergent envs</td>
+        </tr>
+        <tr>
+          <td>Workspaces</td>
+          <td><span class="partial">Medium</span></td>
+          <td><span class="check">Exact</span></td>
+          <td><span class="check">Low</span></td>
+          <td>Small projects</td>
+        </tr>
+        <tr>
+          <td>Branch-per-env</td>
+          <td><span class="cross">Low</span></td>
+          <td><span class="cross">Drift</span></td>
+          <td><span class="cross">High</span></td>
+          <td>Never</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="card-grid fade-up">
+      <div class="card">
+        <div class="card-title">tfvars-per-environment</div>
+        <p>Same HCL code, different variable values. One <code>dev.tfvars</code>, one <code>staging.tfvars</code>, one <code>prod.tfvars</code>. CI/CD passes <code>-var-file=envs/prod.tfvars</code>. Guarantees structural parity across environments.</p>
+      </div>
+      <div class="card">
+        <div class="card-title">Directory-per-environment</div>
+        <p>Separate <code>environments/dev/</code>, <code>environments/staging/</code>, <code>environments/prod/</code> directories. Each calls the same shared modules but can diverge. More flexibility, higher risk of drift.</p>
+      </div>
+      <div class="card">
+        <div class="card-title">Workspaces</div>
+        <p><code>terraform workspace select dev</code>. Simple but limited: same backend config, <code>terraform.workspace</code> in conditionals. Works for small projects. At scale, too easy to apply to the wrong workspace.</p>
+      </div>
+      <div class="card">
+        <div class="card-title" style="color:var(--red)">Branch-per-environment</div>
+        <p><code>dev</code> branch deploys to dev, <code>main</code> deploys to prod. Sounds intuitive but creates permanent drift: cherry-picks diverge, merge conflicts compound, and nobody can prove dev matches prod.</p>
+      </div>
+    </div>
+
+    <p class="body fade-up" style="margin-top:20px;font-weight:600">
+      Environment promotion: dev &rarr; staging &rarr; prod
+    </p>
+    <!-- Environment Promotion SVG Diagram -->
+    <div class="fade-up" style="margin:24px 0;overflow-x:auto">
+      <svg viewBox="0 0 880 195" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:880px;display:block;margin:0 auto" font-family="'Inter',system-ui,sans-serif">
+        <defs>
+          <marker id="ah-promo-blue" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#58a6ff"/></marker>
+          <marker id="ah-promo-green" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#3fb950"/></marker>
+          <marker id="ah-promo-gold" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#d29922"/></marker>
+          <marker id="ah-promo-teal" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#39d2c0"/></marker>
+        </defs>
+
+        <!-- Dashed container -->
+        <rect x="10" y="5" width="860" height="185" rx="12" fill="rgba(63,185,80,0.03)" stroke="rgba(63,185,80,0.12)" stroke-width="1.5" stroke-dasharray="8 4"/>
+        <text x="30" y="26" fill="#3fb950" font-size="10" font-weight="600" letter-spacing="1.5">🚦 ENVIRONMENT PROMOTION</text>
+
+        <!-- Step 1: Developer opens PR -->
+        <rect x="30" y="45" width="180" height="62" rx="10" fill="#161b22" stroke="rgba(88,166,255,0.4)" stroke-width="1.2"/>
+        <text x="120" y="63" fill="#58a6ff" font-size="10" font-weight="700" text-anchor="middle" letter-spacing="1">DEVELOPER</text>
+        <text x="120" y="80" fill="#e6f1ff" font-size="11" font-weight="600" text-anchor="middle">📝 Open PR</text>
+        <text x="120" y="97" fill="#495670" font-size="8.5" text-anchor="middle" font-family="'JetBrains Mono',monospace">CI auto-plans vs dev</text>
+
+        <!-- Arrow 1->2 -->
+        <path id="promo-p1" d="M210,76 L255,76" fill="none" stroke="rgba(88,166,255,0.4)" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-promo-blue)"/>
+        <circle r="2.5" fill="#58a6ff" opacity="0.8"><animateMotion dur="1.5s" repeatCount="indefinite"><mpath href="#promo-p1"/></animateMotion></circle>
+        <circle cx="232" cy="66" r="10" fill="#0a192f" stroke="#58a6ff" stroke-width="1.2"/>
+        <text x="232" y="69" fill="#58a6ff" font-size="9" font-weight="700" text-anchor="middle">1</text>
+
+        <!-- Step 2: CI/CD auto-apply to dev -->
+        <rect x="260" y="45" width="180" height="62" rx="10" fill="#161b22" stroke="rgba(63,185,80,0.4)" stroke-width="1.2"/>
+        <text x="350" y="63" fill="#3fb950" font-size="10" font-weight="700" text-anchor="middle" letter-spacing="1">CI/CD</text>
+        <text x="350" y="80" fill="#e6f1ff" font-size="11" font-weight="600" text-anchor="middle">⚡ Auto-Apply DEV</text>
+        <text x="350" y="97" fill="#495670" font-size="8.5" text-anchor="middle" font-family="'JetBrains Mono',monospace">smoke + policy checks</text>
+
+        <!-- Arrow 2->3 -->
+        <path id="promo-p2" d="M440,76 L485,76" fill="none" stroke="rgba(63,185,80,0.4)" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-promo-green)"/>
+        <circle r="2.5" fill="#3fb950" opacity="0.8"><animateMotion dur="1.5s" repeatCount="indefinite"><mpath href="#promo-p2"/></animateMotion></circle>
+        <circle cx="462" cy="66" r="10" fill="#0a192f" stroke="#3fb950" stroke-width="1.2"/>
+        <text x="462" y="69" fill="#3fb950" font-size="9" font-weight="700" text-anchor="middle">2</text>
+
+        <!-- Step 3: Staging gate -->
+        <rect x="490" y="45" width="180" height="62" rx="10" fill="#161b22" stroke="rgba(210,153,34,0.4)" stroke-width="1.2"/>
+        <text x="580" y="63" fill="#d29922" font-size="10" font-weight="700" text-anchor="middle" letter-spacing="1">STAGING GATE</text>
+        <text x="580" y="80" fill="#e6f1ff" font-size="11" font-weight="600" text-anchor="middle">🔒 Promote STAGING</text>
+        <text x="580" y="97" fill="#495670" font-size="8.5" text-anchor="middle" font-family="'JetBrains Mono',monospace">1 infra lead approval</text>
+
+        <!-- Arrow 3->4 -->
+        <path id="promo-p3" d="M670,76 L715,76" fill="none" stroke="rgba(210,153,34,0.4)" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-promo-gold)"/>
+        <circle r="2.5" fill="#d29922" opacity="0.8"><animateMotion dur="1.5s" repeatCount="indefinite"><mpath href="#promo-p3"/></animateMotion></circle>
+        <circle cx="692" cy="66" r="10" fill="#0a192f" stroke="#d29922" stroke-width="1.2"/>
+        <text x="692" y="69" fill="#d29922" font-size="9" font-weight="700" text-anchor="middle">3</text>
+
+        <!-- Step 4: Prod gate -->
+        <rect x="720" y="45" width="130" height="62" rx="10" fill="#161b22" stroke="rgba(57,210,192,0.4)" stroke-width="1.2"/>
+        <text x="785" y="63" fill="#39d2c0" font-size="10" font-weight="700" text-anchor="middle" letter-spacing="1">PROD GATE</text>
+        <text x="785" y="80" fill="#e6f1ff" font-size="11" font-weight="600" text-anchor="middle">🚀 PROD</text>
+        <text x="785" y="97" fill="#495670" font-size="8.5" text-anchor="middle" font-family="'JetBrains Mono',monospace">2 approvals</text>
+
+        <!-- Rollback arrow from Prod back -->
+        <path id="promo-rollback" d="M785,107 C785,140 580,150 350,150 C200,150 120,140 120,107" fill="none" stroke="rgba(248,81,73,0.25)" stroke-width="1.2" stroke-dasharray="4 3"/>
+        <circle r="2" fill="#f85149" opacity="0.6"><animateMotion dur="4s" repeatCount="indefinite"><mpath href="#promo-rollback"/></animateMotion></circle>
+        <text x="440" y="165" fill="#f85149" font-size="9" font-weight="600" text-anchor="middle" opacity="0.7">↩ auto-rollback on failure</text>
+
+        <!-- Step 4 label -->
+        <circle cx="810" cy="118" r="10" fill="#0a192f" stroke="#39d2c0" stroke-width="1.2"/>
+        <text x="810" y="121" fill="#39d2c0" font-size="9" font-weight="700" text-anchor="middle">4</text>
+      </svg>
+    </div>
+  </section>
+
+  <!-- CI/CD -->
+  <section id="cicd">
+    <div class="section-title fade-up">Automated Terraform Workflows</div>
+    <p class="body fade-up">
+      Nobody runs <code>terraform apply</code> from a laptop. Every change goes through a PR, gets an automated plan, and is reviewed before apply. The CI/CD system owns the credentials, manages the state locks, and enforces policies.
+    </p>
+
+    <!-- CI/CD Pipeline SVG Diagram -->
+    <div class="fade-up" style="margin:24px 0;overflow-x:auto">
+      <svg viewBox="0 0 880 200" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:880px;display:block;margin:0 auto" font-family="'Inter',system-ui,sans-serif">
+        <defs>
+          <marker id="ah-pipe-blue" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#58a6ff"/></marker>
+          <marker id="ah-pipe-purple" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#bc8cff"/></marker>
+          <marker id="ah-pipe-gold" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#d29922"/></marker>
+          <marker id="ah-pipe-green" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#3fb950"/></marker>
+          <marker id="ah-pipe-teal" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#39d2c0"/></marker>
+        </defs>
+
+        <!-- Dashed container: full pipeline -->
+        <rect x="10" y="10" width="860" height="180" rx="12" fill="rgba(88,166,255,0.03)" stroke="rgba(88,166,255,0.12)" stroke-width="1.5" stroke-dasharray="8 4"/>
+        <text x="30" y="32" fill="#58a6ff" font-size="10" font-weight="600" letter-spacing="1.5">🔄 CI/CD PIPELINE</text>
+
+        <!-- Node 1: Open PR -->
+        <rect x="30" y="55" width="140" height="60" rx="10" fill="#161b22" stroke="rgba(88,166,255,0.4)" stroke-width="1.2"/>
+        <text x="100" y="78" fill="#58a6ff" font-size="12" font-weight="700" text-anchor="middle">📝 Open PR</text>
+        <text x="100" y="96" fill="#495670" font-size="9" text-anchor="middle" font-family="'JetBrains Mono',monospace">push branch</text>
+
+        <!-- Arrow 1->2 -->
+        <path id="pipe-p1" d="M170,85 L230,85" fill="none" stroke="rgba(88,166,255,0.4)" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-pipe-blue)"/>
+        <circle r="2.5" fill="#58a6ff" opacity="0.8"><animateMotion dur="1.5s" repeatCount="indefinite"><mpath href="#pipe-p1"/></animateMotion></circle>
+        <circle cx="200" cy="75" r="10" fill="#0a192f" stroke="#58a6ff" stroke-width="1.2"/>
+        <text x="200" y="78" fill="#58a6ff" font-size="9" font-weight="700" text-anchor="middle">1</text>
+
+        <!-- Node 2: Auto-Plan -->
+        <rect x="235" y="55" width="140" height="60" rx="10" fill="#161b22" stroke="rgba(188,140,255,0.4)" stroke-width="1.2"/>
+        <text x="305" y="78" fill="#bc8cff" font-size="12" font-weight="700" text-anchor="middle">🔍 Auto-Plan</text>
+        <text x="305" y="96" fill="#495670" font-size="9" text-anchor="middle" font-family="'JetBrains Mono',monospace">terraform plan</text>
+
+        <!-- Arrow 2->3 -->
+        <path id="pipe-p2" d="M375,85 L435,85" fill="none" stroke="rgba(188,140,255,0.4)" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-pipe-purple)"/>
+        <circle r="2.5" fill="#bc8cff" opacity="0.8"><animateMotion dur="1.5s" repeatCount="indefinite"><mpath href="#pipe-p2"/></animateMotion></circle>
+        <circle cx="405" cy="75" r="10" fill="#0a192f" stroke="#bc8cff" stroke-width="1.2"/>
+        <text x="405" y="78" fill="#bc8cff" font-size="9" font-weight="700" text-anchor="middle">2</text>
+
+        <!-- Node 3: Policy Check -->
+        <rect x="440" y="55" width="140" height="60" rx="10" fill="#161b22" stroke="rgba(210,153,34,0.4)" stroke-width="1.2"/>
+        <text x="510" y="78" fill="#d29922" font-size="12" font-weight="700" text-anchor="middle">🛡️ Policy Check</text>
+        <text x="510" y="96" fill="#495670" font-size="9" text-anchor="middle" font-family="'JetBrains Mono',monospace">OPA / Rego</text>
+
+        <!-- Arrow 3->4 -->
+        <path id="pipe-p3" d="M580,85 L635,85" fill="none" stroke="rgba(210,153,34,0.4)" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-pipe-gold)"/>
+        <circle r="2.5" fill="#d29922" opacity="0.8"><animateMotion dur="1.5s" repeatCount="indefinite"><mpath href="#pipe-p3"/></animateMotion></circle>
+        <circle cx="607" cy="75" r="10" fill="#0a192f" stroke="#d29922" stroke-width="1.2"/>
+        <text x="607" y="78" fill="#d29922" font-size="9" font-weight="700" text-anchor="middle">3</text>
+
+        <!-- Node 4: Review -->
+        <rect x="640" y="55" width="140" height="60" rx="10" fill="#161b22" stroke="rgba(63,185,80,0.4)" stroke-width="1.2"/>
+        <text x="710" y="78" fill="#3fb950" font-size="12" font-weight="700" text-anchor="middle">✅ Review</text>
+        <text x="710" y="96" fill="#495670" font-size="9" text-anchor="middle" font-family="'JetBrains Mono',monospace">approve / reject</text>
+
+        <!-- Arrow 4->5 (curves down to bottom row) -->
+        <path id="pipe-p4" d="M710,115 C710,130 710,135 710,145" fill="none" stroke="rgba(63,185,80,0.4)" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-pipe-green)"/>
+        <circle r="2.5" fill="#3fb950" opacity="0.8"><animateMotion dur="1.5s" repeatCount="indefinite"><mpath href="#pipe-p4"/></animateMotion></circle>
+        <circle cx="720" cy="130" r="10" fill="#0a192f" stroke="#3fb950" stroke-width="1.2"/>
+        <text x="720" y="133" fill="#3fb950" font-size="9" font-weight="700" text-anchor="middle">4</text>
+
+        <!-- Node 5: Merge & Apply (bottom right) -->
+        <rect x="610" y="145" width="230" height="36" rx="10" fill="#161b22" stroke="rgba(57,210,192,0.4)" stroke-width="1.2"/>
+        <text x="725" y="167" fill="#39d2c0" font-size="12" font-weight="700" text-anchor="middle">🚀 Merge → Auto-Apply</text>
+
+        <!-- State file output arrow -->
+        <path id="pipe-p5" d="M610,163 L540,163" fill="none" stroke="rgba(57,210,192,0.3)" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-pipe-teal)"/>
+        <circle r="2.5" fill="#39d2c0" opacity="0.8"><animateMotion dur="1.8s" repeatCount="indefinite"><mpath href="#pipe-p5"/></animateMotion></circle>
+
+        <!-- State file box -->
+        <rect x="390" y="145" width="145" height="36" rx="10" fill="#161b22" stroke="rgba(210,153,34,0.3)" stroke-width="1.2"/>
+        <text x="462" y="167" fill="#d29922" font-size="11" font-weight="600" text-anchor="middle">💾 State (GCS)</text>
+
+        <!-- Promotion gates arrow -->
+        <path id="pipe-p6" d="M390,163 L290,163" fill="none" stroke="rgba(210,153,34,0.3)" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-pipe-gold)"/>
+        <circle r="2.5" fill="#d29922" opacity="0.8"><animateMotion dur="2s" repeatCount="indefinite"><mpath href="#pipe-p6"/></animateMotion></circle>
+
+        <!-- Promotion gates box -->
+        <rect x="30" y="140" width="255" height="42" rx="10" fill="#161b22" stroke="rgba(188,140,255,0.3)" stroke-width="1.2"/>
+        <text x="157" y="158" fill="#bc8cff" font-size="11" font-weight="600" text-anchor="middle">🔒 Promotion Gates</text>
+        <text x="157" y="172" fill="#495670" font-size="9" text-anchor="middle" font-family="'JetBrains Mono',monospace">dev → staging → prod (approval required)</text>
+
+        <circle cx="340" cy="153" r="10" fill="#0a192f" stroke="#bc8cff" stroke-width="1.2"/>
+        <text x="340" y="156" fill="#bc8cff" font-size="9" font-weight="700" text-anchor="middle">5</text>
+      </svg>
+    </div>
+
+    <table class="comp-table fade-up">
+      <thead>
+        <tr><th>Platform</th><th>Model</th><th>Drift Detection</th><th>Policy</th><th>Cost Est.</th><th>Complexity</th></tr>
+      </thead>
+      <tbody>
+        <tr class="highlight">
+          <td>Spacelift</td>
+          <td>GitOps, managed</td>
+          <td><span class="check">Built-in</span></td>
+          <td><span class="check">OPA/Rego</span></td>
+          <td><span class="check">Infracost</span></td>
+          <td>Low</td>
+        </tr>
+        <tr>
+          <td>Terraform Cloud</td>
+          <td>HashiCorp managed</td>
+          <td><span class="check">Health checks</span></td>
+          <td><span class="check">Sentinel</span></td>
+          <td><span class="check">Built-in</span></td>
+          <td>Low</td>
+        </tr>
+        <tr>
+          <td>Atlantis</td>
+          <td>Self-hosted, PR-based</td>
+          <td><span class="cross">Manual</span></td>
+          <td><span class="partial">conftest</span></td>
+          <td><span class="partial">Plugin</span></td>
+          <td>Medium</td>
+        </tr>
+        <tr>
+          <td>GitHub Actions</td>
+          <td>DIY pipeline</td>
+          <td><span class="cross">Custom</span></td>
+          <td><span class="partial">Custom</span></td>
+          <td><span class="partial">Infracost action</span></td>
+          <td>High</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="card-grid fade-up">
+      <div class="card">
+        <div class="card-title">Spacelift</div>
+        <ul>
+          <li>Stack per root module, auto-plan on PR</li>
+          <li>Manual approve for prod, auto-apply for dev</li>
+          <li>Drift detection on configurable schedule</li>
+          <li>OPA/Rego policies evaluated before apply</li>
+          <li>Stack dependencies for ordered deployments</li>
+          <li>Worker pools for private network access</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-title">Atlantis</div>
+        <ul>
+          <li>Self-hosted Go binary, PR-driven workflow</li>
+          <li><code>atlantis.yaml</code> per repo for project config</li>
+          <li>Comment-driven: <code>atlantis plan</code>, <code>atlantis apply</code></li>
+          <li>Simpler model but fewer guardrails</li>
+          <li>No built-in drift detection or policy engine</li>
+          <li>Good for teams that want full control</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-title">Terraform Cloud</div>
+        <ul>
+          <li>HashiCorp's managed platform</li>
+          <li>Run triggers for module dependency chains</li>
+          <li>Sentinel policy-as-code (HashiCorp proprietary)</li>
+          <li>Built-in cost estimation per plan</li>
+          <li>Private module registry</li>
+          <li>Agent-based execution for private networks</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-title">GitHub Actions (DIY)</div>
+        <ul>
+          <li>Full control, full responsibility</li>
+          <li><code>terraform plan</code> on <code>pull_request</code> trigger</li>
+          <li><code>terraform apply</code> on <code>push</code> to main</li>
+          <li>Credentials via OIDC Workload Identity Federation</li>
+          <li>Plan output as PR comment via <code>actions/github-script</code></li>
+          <li>Build your own drift detection cron</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout fade-up">
+      <strong>Why Spacelift for GCP at scale:</strong> Worker pools run inside your VPC (private network access to GCP APIs). Stack dependencies model the actual deployment order (networking before compute, IAM before services). Drift detection runs scheduled plans and alerts on changes made outside Terraform. OPA policies block non-compliant resources before they reach production.
+    </div>
+  </section>
+
+  <!-- GCP -->
+  <section id="gcp">
+    <div class="section-title fade-up">GCP-Specific Patterns</div>
+    <p class="body fade-up">
+      Google Cloud's resource hierarchy, Shared VPC model, and IAM system create unique patterns for Terraform. These patterns were developed managing infrastructure across a multi-project GCP organization.
+    </p>
+
+    <p class="body fade-up" style="font-weight:600;margin-bottom:8px">Resource Hierarchy</p>
+    <!-- GCP Resource Hierarchy SVG Diagram -->
+    <div class="fade-up" style="margin:24px 0;overflow-x:auto">
+      <svg viewBox="0 0 880 340" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:880px;display:block;margin:0 auto" font-family="'Inter',system-ui,sans-serif">
+        <defs>
+          <marker id="ah-hier-teal" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#39d2c0"/></marker>
+          <marker id="ah-hier-purple" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#bc8cff"/></marker>
+          <marker id="ah-hier-blue" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#58a6ff"/></marker>
+        </defs>
+
+        <!-- Dashed container -->
+        <rect x="10" y="5" width="860" height="330" rx="12" fill="rgba(57,210,192,0.03)" stroke="rgba(57,210,192,0.12)" stroke-width="1.5" stroke-dasharray="8 4"/>
+        <text x="30" y="26" fill="#39d2c0" font-size="10" font-weight="600" letter-spacing="1.5">☁️ GCP RESOURCE HIERARCHY</text>
+
+        <!-- Organization node -->
+        <rect x="350" y="35" width="180" height="45" rx="10" fill="#161b22" stroke="rgba(57,210,192,0.4)" stroke-width="1.2"/>
+        <text x="440" y="55" fill="#39d2c0" font-size="13" font-weight="700" text-anchor="middle">🏢 Organization</text>
+        <text x="440" y="70" fill="#495670" font-size="9" font-weight="500" text-anchor="middle" font-family="'JetBrains Mono',monospace">acme-corp.com</text>
+
+        <!-- Bezier paths from Org to Folders -->
+        <path id="hier-p1" d="M380,80 C380,110 240,115 240,145" fill="none" stroke="rgba(57,210,192,0.3)" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-hier-teal)"/>
+        <circle r="2.5" fill="#39d2c0" opacity="0.8"><animateMotion dur="2s" repeatCount="indefinite"><mpath href="#hier-p1"/></animateMotion></circle>
+
+        <path id="hier-p2" d="M440,80 C440,110 440,115 440,145" fill="none" stroke="rgba(57,210,192,0.3)" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-hier-teal)"/>
+        <circle r="2.5" fill="#39d2c0" opacity="0.8"><animateMotion dur="2.2s" repeatCount="indefinite"><mpath href="#hier-p2"/></animateMotion></circle>
+
+        <path id="hier-p3" d="M500,80 C500,110 640,115 640,145" fill="none" stroke="rgba(57,210,192,0.3)" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-hier-teal)"/>
+        <circle r="2.5" fill="#39d2c0" opacity="0.8"><animateMotion dur="1.8s" repeatCount="indefinite"><mpath href="#hier-p3"/></animateMotion></circle>
+
+        <!-- Folder nodes -->
+        <rect x="155" y="148" width="170" height="45" rx="10" fill="#161b22" stroke="rgba(188,140,255,0.4)" stroke-width="1.2"/>
+        <text x="240" y="168" fill="#bc8cff" font-size="12" font-weight="700" text-anchor="middle">📁 Engineering</text>
+        <text x="240" y="183" fill="#495670" font-size="9" font-weight="500" text-anchor="middle" font-family="'JetBrains Mono',monospace">folder</text>
+
+        <rect x="355" y="148" width="170" height="45" rx="10" fill="#161b22" stroke="rgba(188,140,255,0.4)" stroke-width="1.2"/>
+        <text x="440" y="168" fill="#bc8cff" font-size="12" font-weight="700" text-anchor="middle">📁 Data</text>
+        <text x="440" y="183" fill="#495670" font-size="9" font-weight="500" text-anchor="middle" font-family="'JetBrains Mono',monospace">folder</text>
+
+        <rect x="555" y="148" width="170" height="45" rx="10" fill="#161b22" stroke="rgba(188,140,255,0.4)" stroke-width="1.2"/>
+        <text x="640" y="168" fill="#bc8cff" font-size="12" font-weight="700" text-anchor="middle">📁 Shared Infra</text>
+        <text x="640" y="183" fill="#495670" font-size="9" font-weight="500" text-anchor="middle" font-family="'JetBrains Mono',monospace">folder</text>
+
+        <!-- Bezier paths from Folders to Projects -->
+        <!-- Engineering -> analytics-dev -->
+        <path id="hier-p4" d="M200,193 C200,220 145,225 145,258" fill="none" stroke="rgba(188,140,255,0.3)" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-hier-purple)"/>
+        <circle r="2.5" fill="#bc8cff" opacity="0.8"><animateMotion dur="2s" repeatCount="indefinite"><mpath href="#hier-p4"/></animateMotion></circle>
+
+        <!-- Engineering -> platform-prod -->
+        <path id="hier-p5" d="M280,193 C280,220 340,225 340,258" fill="none" stroke="rgba(188,140,255,0.3)" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-hier-purple)"/>
+        <circle r="2.5" fill="#bc8cff" opacity="0.8"><animateMotion dur="2.2s" repeatCount="indefinite"><mpath href="#hier-p5"/></animateMotion></circle>
+
+        <!-- Data -> analytics-prod -->
+        <path id="hier-p6" d="M440,193 C440,220 520,225 520,258" fill="none" stroke="rgba(188,140,255,0.3)" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-hier-purple)"/>
+        <circle r="2.5" fill="#bc8cff" opacity="0.8"><animateMotion dur="1.8s" repeatCount="indefinite"><mpath href="#hier-p6"/></animateMotion></circle>
+
+        <!-- Shared Infra -> network-host -->
+        <path id="hier-p7" d="M640,193 C640,220 710,225 710,258" fill="none" stroke="rgba(188,140,255,0.3)" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-hier-purple)"/>
+        <circle r="2.5" fill="#bc8cff" opacity="0.8"><animateMotion dur="2.4s" repeatCount="indefinite"><mpath href="#hier-p7"/></animateMotion></circle>
+
+        <!-- Project nodes -->
+        <rect x="60" y="260" width="170" height="45" rx="10" fill="#161b22" stroke="rgba(88,166,255,0.4)" stroke-width="1.2"/>
+        <text x="145" y="280" fill="#58a6ff" font-size="12" font-weight="600" text-anchor="middle">analytics-dev</text>
+        <text x="145" y="295" fill="#495670" font-size="9" font-weight="500" text-anchor="middle" font-family="'JetBrains Mono',monospace">project</text>
+
+        <rect x="255" y="260" width="170" height="45" rx="10" fill="#161b22" stroke="rgba(88,166,255,0.4)" stroke-width="1.2"/>
+        <text x="340" y="280" fill="#58a6ff" font-size="12" font-weight="600" text-anchor="middle">platform-prod</text>
+        <text x="340" y="295" fill="#495670" font-size="9" font-weight="500" text-anchor="middle" font-family="'JetBrains Mono',monospace">project</text>
+
+        <rect x="445" y="260" width="170" height="45" rx="10" fill="#161b22" stroke="rgba(88,166,255,0.4)" stroke-width="1.2"/>
+        <text x="530" y="280" fill="#58a6ff" font-size="12" font-weight="600" text-anchor="middle">analytics-prod</text>
+        <text x="530" y="295" fill="#495670" font-size="9" font-weight="500" text-anchor="middle" font-family="'JetBrains Mono',monospace">project</text>
+
+        <rect x="635" y="260" width="170" height="45" rx="10" fill="#161b22" stroke="rgba(88,166,255,0.4)" stroke-width="1.2"/>
+        <text x="720" y="280" fill="#58a6ff" font-size="12" font-weight="600" text-anchor="middle">network-host</text>
+        <text x="720" y="295" fill="#495670" font-size="9" font-weight="500" text-anchor="middle" font-family="'JetBrains Mono',monospace">project</text>
+
+        <!-- Legend -->
+        <circle cx="280" cy="325" r="4" fill="#39d2c0"/><text x="290" y="328" fill="#495670" font-size="10">Organization</text>
+        <circle cx="390" cy="325" r="4" fill="#bc8cff"/><text x="400" y="328" fill="#495670" font-size="10">Folders</text>
+        <circle cx="470" cy="325" r="4" fill="#58a6ff"/><text x="480" y="328" fill="#495670" font-size="10">Projects</text>
+      </svg>
+    </div>
+
+    <div class="gcp-grid fade-up">
+      <div class="gcp-card">
+        <div class="gcp-name">Project Factory</div>
+        <div class="gcp-desc">Create GCP projects programmatically with consistent IAM bindings, API enablement, default networking, budget alerts, and labels. A single <code>terraform-gcp-project-factory</code> module produces a fully-configured project from a minimal set of inputs.</div>
+      </div>
+      <div class="gcp-card">
+        <div class="gcp-name">Shared VPC</div>
+        <div class="gcp-desc">Hub-and-spoke networking. One host project owns the VPC and subnets. Service projects (analytics, platform, data) attach via <code>google_compute_shared_vpc_service_project</code>. Centralized firewall rules, decentralized compute.</div>
+      </div>
+      <div class="gcp-card">
+        <div class="gcp-name">Firewall Rules as Code</div>
+        <div class="gcp-desc">All firewall rules in a single <code>terraform-gcp-networking</code> repo. Hierarchical firewall policies at the org and folder level. No console-created rules. <code>google_compute_firewall</code> resources tagged by service, managed through PR review.</div>
+      </div>
+      <div class="gcp-card">
+        <div class="gcp-name">Workload Identity</div>
+        <div class="gcp-desc">No service account keys. GKE pods authenticate via Workload Identity Federation. CI/CD authenticates via OIDC federation with GitHub/Spacelift. <code>google_iam_workload_identity_pool</code> replaces exported JSON keys entirely.</div>
+      </div>
+      <div class="gcp-card">
+        <div class="gcp-name">Organization Policies</div>
+        <div class="gcp-desc">Enforce constraints across the org hierarchy. <code>constraints/compute.requireShieldedVm</code>, <code>constraints/iam.disableServiceAccountKeyCreation</code>, <code>constraints/compute.restrictLoadBalancerCreationForTypes</code>. Applied at folder level, inherited by all projects.</div>
+      </div>
+      <div class="gcp-card">
+        <div class="gcp-name">Service Account Hygiene</div>
+        <div class="gcp-desc">Least-privilege IAM. One service account per application role with <code>google_project_iam_member</code> at project scope (never org scope). Custom roles for fine-grained permissions. Regular audits via <code>gcloud asset search-all-iam-policies</code>.</div>
+      </div>
+    </div>
+
+    <pre class="fade-up"><code><span style="color:var(--text-dim)"># Project factory — consistent project creation</span>
+module "analytics_project" {
+  source = "git::https://github.com/org/terraform-gcp-project-factory.git?ref=v4.2.0"
+
+  project_name   = "analytics-${var.env}"
+  folder_id      = var.data_folder_id
+  billing_account = var.billing_account
+
+  activate_apis = [
+    "bigquery.googleapis.com",
+    "datastream.googleapis.com",
+    "storage.googleapis.com",
+    "artifactregistry.googleapis.com",
+  ]
+
+  labels = {
+    environment = var.env
+    team        = "data-engineering"
+    cost-center = "analytics"
+  }
+
+  budget_amount = var.env == "prod" ? 5000 : 500
+}</code></pre>
+  </section>
+
+  <!-- Governance -->
+  <section id="governance">
+    <div class="section-title fade-up">Governance &amp; Drift Management</div>
+    <p class="body fade-up">
+      Infrastructure governance is the gap between "we wrote Terraform" and "our Terraform actually reflects reality." Drift happens. Engineers click things in the console. Scripts modify resources outside Terraform. Without active governance, the state file becomes a lie.
+    </p>
+
+    <div class="gov-grid fade-up">
+      <div class="gov-card">
+        <div class="gov-name">Drift Detection</div>
+        <div class="gov-focus">Scheduled</div>
+        <div class="gov-desc">Spacelift runs <code>terraform plan</code> on a schedule (every 4 hours for prod, daily for dev). Any non-empty plan triggers a Slack alert. Drift is either reconciled (apply the plan) or adopted (import the resource).</div>
+      </div>
+      <div class="gov-card">
+        <div class="gov-name">Policy as Code</div>
+        <div class="gov-focus">OPA / Rego</div>
+        <div class="gov-desc">Policies evaluate <code>terraform show -json</code> output before apply. Rules: no public IPs on compute, encryption required on storage, no overly permissive IAM, mandatory labels on all resources.</div>
+      </div>
+      <div class="gov-card">
+        <div class="gov-name">Cost Estimation</div>
+        <div class="gov-focus">Infracost</div>
+        <div class="gov-desc">Every PR gets a cost diff comment: "+$42/month" or "-$200/month." Alerts on cost spikes above threshold. Monthly cost reporting aggregated across all stacks. Budget alerts at 80% and 100%.</div>
+      </div>
+      <div class="gov-card">
+        <div class="gov-name">Blast Radius Control</div>
+        <div class="gov-focus">Isolation</div>
+        <div class="gov-desc">Small state files (one per service per env). Networking and IAM in separate root modules from compute. <code>-target</code> for surgical changes when needed. Never modify networking and application in the same apply.</div>
+      </div>
+      <div class="gov-card">
+        <div class="gov-name">Documentation</div>
+        <div class="gov-focus">Auto-generated</div>
+        <div class="gov-desc"><code>terraform-docs</code> generates README from variable descriptions and outputs. ADRs (Architecture Decision Records) for why infrastructure is structured a certain way. Runbooks for common operations.</div>
+      </div>
+      <div class="gov-card">
+        <div class="gov-name">Access Control</div>
+        <div class="gov-focus">Least Privilege</div>
+        <div class="gov-desc">CI/CD service accounts with minimal IAM roles. No developer has <code>terraform apply</code> access to prod. State bucket access limited to CI/CD and infra leads. Audit logs for all state file access.</div>
+      </div>
+    </div>
+
+    <p class="body fade-up" style="margin-top:20px;font-weight:600">
+      Policy Examples (OPA/Rego)
+    </p>
+    <pre class="fade-up"><code><span style="color:var(--text-dim)"># deny_public_ip.rego — block public IPs on compute instances</span>
+package terraform.policies
+
+deny[msg] {
+  resource := input.planned_values.root_module.resources[_]
+  resource.type == "google_compute_instance"
+  access_config := resource.values.network_interface[_].access_config
+  count(access_config) > 0
+  msg := sprintf("Public IP not allowed on %s", [resource.address])
+}
+
+<span style="color:var(--text-dim)"># require_labels.rego — enforce mandatory labels</span>
+deny[msg] {
+  resource := input.planned_values.root_module.resources[_]
+  required := {"environment", "team", "cost-center"}
+  provided := {k | resource.values.labels[k]}
+  missing := required - provided
+  count(missing) > 0
+  msg := sprintf("Missing required labels %v on %s", [missing, resource.address])
+}</code></pre>
+
+    <div class="callout fade-up">
+      <strong>The feedback loop:</strong> Drift detection finds a change &rarr; alert fires in Slack &rarr; engineer investigates &rarr; either writes Terraform to match reality (adopt) or applies Terraform to overwrite the manual change (reconcile). Neither option is always right. The point is that drift is never silent.
+    </div>
+  </section>
+
+</div>
+
+<div class="footer">
+  <a href="../">&larr; Back to portfolio</a> &middot; Anvesh Jarabani &middot; July 2026
+</div>
+
+<script>
+// Spotlight
+const sp = document.getElementById('spotlight');
+document.addEventListener('mousemove', e => {
+  sp.style.background = `radial-gradient(600px at ${e.clientX}px ${e.clientY}px, rgba(29,78,216,0.06), transparent 80%)`;
+});
+
+// Fade-in
+const fadeObs = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); fadeObs.unobserve(e.target); } });
+}, { threshold: 0.1 });
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+window.scrollTo(0, 0);
+document.querySelectorAll('.fade-up').forEach(el => {
+  if (el.getBoundingClientRect().top < window.innerHeight) { el.classList.add('visible'); }
+  else { el.style.opacity = '0'; fadeObs.observe(el); }
+});
+
+// Scroll-spy
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('.top-bar nav a');
+const spyObs = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      navLinks.forEach(l => l.classList.remove('active'));
+      const link = document.querySelector(`.top-bar nav a[href="#${e.target.id}"]`);
+      if (link) link.classList.add('active');
+    }
+  });
+}, { rootMargin: '-30% 0px -70% 0px' });
+sections.forEach(s => spyObs.observe(s));
+
+// Smooth scroll for nav clicks
+document.querySelectorAll(".top-bar nav a[href^=\"#\"]").forEach(function(a){
+  a.addEventListener("click",function(e){
+    e.preventDefault();
+    var t=document.querySelector(this.getAttribute("href"));
+    if(t)t.scrollIntoView({behavior:"smooth",block:"start"});
+    history.pushState(null,"",this.getAttribute("href"));
+  });
+});
+
+// Staggered card reveal
+const cardObs = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      const cards = e.target.querySelectorAll('.card, .stat-card, .gcp-card, .gov-card, .step-item, .pipe-node, .h-box, .arch-box');
+      cards.forEach((c, i) => {
+        c.style.opacity = '0';
+        c.style.transform = 'translateY(12px)';
+        c.style.transition = 'opacity .4s ease, transform .4s ease';
+        setTimeout(() => { c.style.opacity = '1'; c.style.transform = 'translateY(0)'; }, i * 80);
+      });
+      cardObs.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.1 });
+document.querySelectorAll('.card-grid, .stat-grid, .gcp-grid, .gov-grid, .step-flow, .pipe-flow, .hierarchy, .arch-flow').forEach(el => cardObs.observe(el));
+</script>
+</body>
+</html>
