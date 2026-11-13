@@ -547,7 +547,7 @@ footer a:hover { color: var(--accent); }
   <div class="about">
     <p class="reveal" style="--d:0">Senior staff data and AI engineering leader with <span class="accent">11+ years</span> driving enterprise digital transformation through scalable data platforms, <span class="hi">Generative AI</span> systems, and ML operations. Delivered <span class="accent">$10M+ in measurable business value</span> across two greenfield analytics platforms, enterprise <span class="hi">GenAI</span> adoption, and production ML systems serving <span class="accent">20,000+ clinics</span>.</p>
     <p class="reveal" style="--d:80">Proven expertise directing multi-cloud strategies (<span class="hi">GCP</span>, <span class="hi">AWS</span>, <span class="hi">Snowflake</span>), building production <span class="hi">agentic RAG</span> and <span class="hi">GraphRAG</span> architectures, establishing <span class="hi">data mesh</span> governance, and leading enterprise <span class="hi">DataOps</span>, <span class="hi">MLOps</span>, and <span class="hi">platform engineering</span> initiatives.</p>
-    <p class="reveal" style="--d:160">Currently at <a href="https://wellsky.com" target="_blank">WellSky</a>, I lead a team building the <span class="hi">Meridian Analytics Stack</span> end-to-end, an <span class="hi">AI-powered knowledge platform</span> indexing <span class="accent2">658 repos</span> and <span class="accent2">31K Confluence pages</span>, and production <span class="hi">agentic RAG</span> on Google ADK and Vertex AI delivering <span class="accent3">30 clinical dashboards</span> for hospice operations.</p>
+    <p class="reveal" style="--d:160">Currently at <a href="https://wellsky.com" target="_blank">WellSky</a>, I lead architecture across the multi-cell <span class="hi">Meridian Analytics Stack</span> (Home Health &amp; Hospice), unified <span class="hi">BigQuery-to-Snowflake dbt orchestration</span> on Cloud Composer (<span class="accent3">~33 TiB/day</span> scan reduction), HIPAA-compliant <span class="hi">Bulk Data Sharing &amp; Secure SQL APIs</span>, and an <span class="hi">AI engineering &amp; agentic RAG platform</span> indexing <span class="accent2">658 repos</span>, <span class="accent2">8,500+ cloud resources</span>, and <span class="accent2">31K docs</span> across <span class="accent3">21 engineering teams</span>.</p>
   </div>
 
 </section>
@@ -569,41 +569,43 @@ footer a:hover { color: var(--accent); }
       </div>
     </div>
     <div class="exp-summary">
-      Build greenfield <span class="hi">Meridian Analytics Stack</span> end-to-end (Terraform → Datastream CDC → BigQuery → dbt → Cube.js → Superset), delivering <span class="accent">30 clinical/financial charts</span>. Architect production <span class="hi">agentic RAG platform</span> and <span class="hi">HOPE agent</span> for hospice care. Create <span class="accent2">67 developer skills</span> driving org-wide AI adoption across <span class="accent2">21 engineering teams</span>.
+      Architect multi-cell <span class="hi">Meridian Analytics Stack</span> across Home Health &amp; Hospice and unify enterprise <span class="hi">BigQuery → GCS → Snowflake</span> dbt orchestration on Cloud Composer — cutting BigQuery scans by <span class="accent3">~33 TiB/day</span>. Ship multi-tenant <span class="hi">Bulk Data Sharing &amp; Secure SQL APIs</span>, production <span class="hi">agentic RAG &amp; HOPE clinical agent</span>, and <span class="accent2">67+ AI developer skills</span> across <span class="accent2">21 engineering teams</span> (<span class="accent">2,100+ merged PRs</span> &amp; <span class="accent3">75+ prod releases</span> in 2026).
     </div>
 
     <div class="exp-details">
       <ul class="exp-bullets">
-        <li>Deliver <span class="hi">BI Analytics Platform</span> on GKE Autopilot (Superset, CubeJS, CubeStore, Composer, Redis) serving <span class="accent">20,000+</span> clinics with self-service analytics</li>
-        <li>Create <span class="hi">AI-powered knowledge platform</span> indexing <span class="accent">658</span> GitHub repos and <span class="accent">31K</span> Confluence pages, building <span class="accent2">67</span> developer skills accelerating AI-assisted development</li>
-        <li>Architect production <span class="hi">agentic RAG platform</span> using Google ADK and Vertex AI (Gemini 2.0 Flash) with GraphRAG, multi-stage query decomposition, and adaptive retrieval</li>
-        <li>Build <span class="hi">HOPE</span> (Healthcare Outcome Prediction Engine) agent with MCP integration for hospice &amp; palliative care</li>
-        <li>Architect next-generation <span class="hi">AI-enabled EMR platform</span> with AI-powered chat service using .NET 10, Kafka (Redpanda), and Vertex AI</li>
-        <li>Lead enterprise <span class="hi">AI tool adoption</span> enabling <span class="accent">50+</span> engineers with LLM-powered development pipelines and multi-agent orchestration</li>
-        <li>Architect <span class="hi">Dataform</span> warehouse with medallion architecture governance and DQ quarantine framework across <span class="accent">1,100+</span> analytics models</li>
-        <li>Execute <span class="hi">PSH Domain Build</span> (7-phase Kimball dimensional model) from HVR replication through DQ validation</li>
-        <li>Wire <span class="hi">analytics agent orchestration</span> integrating Cube.js semantic layer, NLP-to-SQL, and Vertex AI for natural-language KPI queries</li>
-        <li>Design <span class="hi">RLS architecture</span> using Cube.js semantic layer with Okta identity integration for secure multi-tenant embedded analytics</li>
-        <li>Drive <span class="hi">HVR → HVR6 Migration</span> across multi-source topology with PostgreSQL hub optimization</li>
-        <li>Build <span class="hi">Snowpipe</span> pipeline replicating <span class="accent">1,037</span> tables → GCS → Snowflake</li>
-        <li>Deploy <span class="hi">AI-driven schema drift detection</span> using Vertex AI auto-generating remediation PRs</li>
-        <li>Establish <span class="hi">WSH BI Architecture Council</span> setting standards adopted across the analytics engineering org</li>
-        <li>Architect <span class="hi">Kimball dimensional model</span> with bus matrix for Meridian, establishing foundation for <span class="accent">300+</span> charts</li>
+        <li>Consolidate <span class="accent">1,100+</span> legacy Dataform models and CI pipelines into a unified <span class="hi">Cloud Composer (Airflow) + dbt-bigquery + Snowflake</span> medallion warehouse via a Parquet GCS bridge, with Workload Identity Federation, staged promotion gates, and automated shadow parity hashing</li>
+        <li>Re-engineer high-frequency clinical, vital-signs, and data-quality models to eliminate full-table registry scans and decouple frozen monthly census snapshots from daily runs — cutting BigQuery scan volume by <span class="accent3">~33 TiB/day</span></li>
+        <li>Architect multi-cell <span class="hi">Meridian &amp; BI Analytics Platform</span> end-to-end (<span class="hi">OpenTofu/Terraform → AlloyDB → Datastream CDC → BigQuery → dbt → Cube.js/CubeStore → Superset</span> on GKE Autopilot) serving <span class="accent">20,000+</span> clinics with <span class="hi">Okta CIAM SAML SSO</span> (replacing legacy Tableau), role-based RBAC, and Cloud Monitoring SLO alerting</li>
+        <li>Build HIPAA-audited <span class="hi">Bulk Data Sharing API</span> serving tenant-isolated GCS Parquet snapshots, incremental delta manifests, self-service tenant re-syncs, OpenAPI/Scalar data dictionaries, and tested SDK recipes across Snowflake, Databricks, BigQuery, Azure Fabric, and Airflow</li>
+        <li>Deliver self-service <span class="hi">Multi-Tenant SQL Query API &amp; Monaco SQL IDE</span> featuring <span class="hi">sqlglot</span> AST allowlisting, CTE-injected row-level security, Okta JWT validation, dry-run byte caps, and per-tenant BigQuery cost quotas</li>
+        <li>Create <span class="hi">AI-powered engineering knowledge hub</span> indexing <span class="accent">658</span> GitHub repos, <span class="accent">8,500+</span> GCP resources across <span class="accent">44</span> projects, and <span class="accent">31K</span> Confluence pages — authoring <span class="accent2">67+</span> developer skills accelerating <span class="accent">50+</span> engineers across <span class="accent2">21</span> teams</li>
+        <li>Architect production <span class="hi">agentic RAG platform</span> on Google ADK and Vertex AI (Gemini) with GraphRAG and adaptive retrieval, plus the <span class="hi">HOPE</span> hospice &amp; palliative care agent with <span class="hi">MCP</span> integration automating clinical summarization</li>
+        <li>Wire <span class="hi">NLP-to-SQL analytics agent orchestration</span> over the Cube.js semantic layer for natural-language KPI queries and inline Superset dashboards; architect AI chat &amp; documentation services on <span class="hi">.NET 10</span>, <span class="hi">Kafka (Redpanda)</span>, and Vertex AI</li>
+        <li>Drive <span class="hi">32-channel HVR 6</span> hybrid CDC migration (Cloud SQL &amp; SQL Server AG → BigQuery &amp; Snowflake) with automated schema-change gap backfill, <span class="accent">1,037-table</span> Snowpipe ingestion, and idempotent <span class="hi">Snowflake Private Listings</span> with multi-tenant RLS</li>
+        <li>Deploy <span class="hi">Vertex AI schema drift detection</span> auto-generating remediation PRs, medallion <span class="hi">DQ quarantine framework</span> with killswitch gates, and Snyk-hardened atomic Helm CI/CD pipelines</li>
+        <li>Execute <span class="hi">PSH Domain Build</span> (7-phase Kimball dimensional model) and Meridian enterprise bus matrix establishing the analytical foundation for <span class="accent">300+</span> clinical, financial, and regulatory charts</li>
+        <li>Chair the <span class="hi">BI Architecture Council</span> (standardizing dbt consolidation, multi-cell isolation, RLS, and FinOps), lead a <span class="accent">6-person</span> analytics engineering team, and ship <span class="accent">2,100+</span> merged PRs across 22 repositories in 2026</li>
       </ul>
     </div>
 
-    <button class="exp-toggle"><span class="arrow">▸</span> Show all 15 highlights</button>
+    <button class="exp-toggle"><span class="arrow">▸</span> Show all 12 highlights</button>
 
     <div class="exp-tags">
       <span class="tag tag-blue">GCP</span>
-      <span class="tag tag-blue">Vertex AI</span>
       <span class="tag tag-blue">BigQuery</span>
-      <span class="tag tag-purple">Google ADK</span>
+      <span class="tag tag-blue">Snowflake</span>
+      <span class="tag tag-blue">AlloyDB</span>
       <span class="tag tag-green">dbt</span>
+      <span class="tag tag-green">Cloud Composer</span>
       <span class="tag tag-green">Cube.js</span>
       <span class="tag tag-green">Superset</span>
-      <span class="tag tag-blue">Terraform</span>
-      <span class="tag tag-blue">Kubernetes</span>
+      <span class="tag tag-blue">OpenTofu / Terraform</span>
+      <span class="tag tag-blue">GKE</span>
+      <span class="tag tag-purple">Vertex AI</span>
+      <span class="tag tag-purple">Google ADK</span>
+      <span class="tag tag-purple">MCP</span>
+      <span class="tag tag-purple">FastAPI</span>
       <span class="tag tag-purple">Kafka</span>
       <span class="tag tag-purple">.NET</span>
     </div>
@@ -729,12 +731,13 @@ footer a:hover { color: var(--accent); }
       <div class="pills">
         <span class="pill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/googlecloud/googlecloud-original.svg" alt="">GCP</span>
         <span class="pill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/googlecloud/googlecloud-original.svg" alt="">BigQuery</span>
+        <span class="pill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/googlecloud/googlecloud-original.svg" alt="">AlloyDB</span>
         <span class="pill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/googlecloud/googlecloud-original.svg" alt="">Vertex AI</span>
         <span class="pill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/googlecloud/googlecloud-original.svg" alt="">Dataproc</span>
         <span class="pill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/googlecloud/googlecloud-original.svg" alt="">Dataplex</span>
-        <span class="pill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/amazonwebservices/amazonwebservices-plain-wordmark.svg" alt="">AWS</span>
-        <span class="pill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/amazonwebservices/amazonwebservices-plain-wordmark.svg" alt="">Redshift</span>
         <span class="pill"><img src="https://cdn.simpleicons.org/snowflake/29B5E8" alt="">Snowflake</span>
+        <span class="pill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/amazonwebservices/amazonwebservices-original-wordmark.svg" alt="">AWS</span>
+        <span class="pill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/amazonwebservices/amazonwebservices-original-wordmark.svg" alt="">Redshift</span>
         <span class="pill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/azure/azure-original.svg" alt="">Azure</span>
       </div>
     </div>
@@ -759,15 +762,17 @@ footer a:hover { color: var(--accent); }
     <div class="bento-card reveal" style="--d:120" data-color="green">
       <div class="bento-title">Data Engineering</div>
       <div class="pills">
+        <span class="pill"><svg class="gi" viewBox="0 0 24 24"><path d="M12 2L2 7v10l10 5 10-5V7L12 2z" fill="#FF694B" opacity="0.9"/></svg>dbt</span>
+        <span class="pill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/apacheairflow/apacheairflow-original.svg" alt="">Airflow / Composer</span>
+        <span class="pill"><svg class="gi" viewBox="0 0 24 24"><polygon points="12,2 21,7 21,17 12,22 3,17 3,7" fill="#7A77FF" opacity="0.25"/><polygon points="12,2 21,7 12,12 3,7" fill="#7A77FF"/><polygon points="12,12 21,7 21,17 12,22" fill="#FF6492" opacity="0.85"/></svg>Cube.js</span>
+        <span class="pill"><img src="https://cdn.simpleicons.org/apachesuperset/20A7C9" alt="">Superset</span>
         <span class="pill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/apachespark/apachespark-original.svg" alt="">Spark</span>
         <span class="pill"><img src="https://cdn.simpleicons.org/apachekafka/e2e8f0" alt="">Kafka</span>
-        <span class="pill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/apacheairflow/apacheairflow-original.svg" alt="">Airflow</span>
-        <span class="pill"><svg class="gi" viewBox="0 0 24 24"><path d="M12 2L2 7v10l10 5 10-5V7L12 2z" fill="#FF694B" opacity="0.9"/></svg>dbt</span>
         <span class="pill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/googlecloud/googlecloud-original.svg" alt="">Dataform</span>
         <span class="pill"><img src="https://cdn.simpleicons.org/apacheflink/E6526F" alt="">Flink</span>
         <span class="pill"><img src="https://cdn.simpleicons.org/databricks/FF3621" alt="">Delta Lake</span>
         <span class="pill"><svg class="gi" viewBox="0 0 24 24"><path d="M12 2l10 5v10l-10 5-10-5V7z" fill="#4FC0D0" opacity="0.3"/><path d="M12 7l5 2.5v5L12 17l-5-2.5v-5z" fill="#4FC0D0"/></svg>Iceberg</span>
-        <span class="pill"><img src="https://cdn.simpleicons.org/apachekafka/e2e8f0" alt="">CDC</span>
+        <span class="pill"><img src="https://cdn.simpleicons.org/apachekafka/e2e8f0" alt="">CDC / HVR 6</span>
       </div>
     </div>
 
@@ -775,8 +780,9 @@ footer a:hover { color: var(--accent); }
       <div class="bento-title">Infrastructure & DevOps</div>
       <div class="pills">
         <span class="pill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/terraform/terraform-original.svg" alt="">Terraform</span>
-        <span class="pill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/kubernetes/kubernetes-plain.svg" alt="">Kubernetes</span>
-        <span class="pill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/docker/docker-original.svg" alt="">Docker</span>
+        <span class="pill"><img src="https://cdn.simpleicons.org/opentofu/FFDA18" alt="">OpenTofu</span>
+        <span class="pill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/kubernetes/kubernetes-plain.svg" alt="">Kubernetes / GKE</span>
+        <span class="pill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/docker/docker-original.svg" alt="">Docker / Helm</span>
         <span class="pill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/githubactions/githubactions-original.svg" alt="">GitHub Actions</span>
         <span class="pill"><svg class="gi" viewBox="0 0 24 24"><path d="M4 17l8-5 8 5" fill="none" stroke="#38bdf8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 12l8-5 8 5" fill="none" stroke="#38bdf8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/></svg>Spacelift</span>
         <span class="pill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/git/git-original.svg" alt="">GitOps</span>
@@ -790,6 +796,7 @@ footer a:hover { color: var(--accent); }
       <div class="pills">
         <span class="pill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg" alt="">Python</span>
         <span class="pill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/postgresql/postgresql-original.svg" alt="">SQL</span>
+        <span class="pill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/fastapi/fastapi-original.svg" alt="">FastAPI</span>
         <span class="pill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/apachespark/apachespark-original.svg" alt="">PySpark</span>
         <span class="pill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/scala/scala-original.svg" alt="">Scala</span>
         <span class="pill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/postgresql/postgresql-original.svg" alt="">PostgreSQL</span>
@@ -843,7 +850,7 @@ footer a:hover { color: var(--accent); }
 
   <div class="certs-row reveal" style="--d:120">
     <span class="cert-badge"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/googlecloud/googlecloud-original.svg" alt=""> GCP Professional Data Engineer</span>
-    <span class="cert-badge"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/amazonwebservices/amazonwebservices-plain-wordmark.svg" alt=""> AWS Solutions Architect</span>
+    <span class="cert-badge"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/amazonwebservices/amazonwebservices-original-wordmark.svg" alt=""> AWS Solutions Architect</span>
     <span class="cert-badge">&#9733; PMP</span>
     <span class="cert-badge"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/terraform/terraform-original.svg" alt=""> Terraform Associate</span>
     <span class="cert-badge">IBM Data Science</span>
